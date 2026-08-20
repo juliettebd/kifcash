@@ -471,10 +471,6 @@
   .kc-send-status-error{ color:var(--kc-rose); }
   .kc-send-status-info{ color:rgba(18,56,89,0.55); }
 
-  #kc-retry-btn{
-    margin-top:14px;
-  }
-
   /* ---------- SABOTEUR ACCORDIONS ---------- */
 
   .kc-saboteurs-intro{
@@ -772,6 +768,28 @@
   // UTILITAIRES
   // ============================================================
 
+  function scrollToTopEverywhere(){
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Quand la page tourne dans une iframe (intégration SIO), scroller
+    // l'intérieur de l'iframe ne fait rien voir côté page hôte : on
+    // prévient la page parente pour qu'elle scrolle, elle, jusqu'en
+    // haut de l'iframe. Le script d'écoute correspondant vit dans le
+    // bloc HTML SIO qui contient l'iframe (voir documentation).
+    try {
+      window.parent.postMessage({ source: "kifcash", type: "scrollTop" }, "*");
+    } catch (e) { /* pas d'iframe parente, ou origine bloquée : sans effet */ }
+  }
+
+  function notifyParentResize(){
+    try {
+      window.parent.postMessage({
+        source: "kifcash",
+        type: "resize",
+        height: document.documentElement.scrollHeight
+      }, "*");
+    } catch (e) { /* pas d'iframe parente : sans effet */ }
+  }
+
   function shuffle(arr){
     for (var i = arr.length - 1; i > 0; i--){
       var j = Math.floor(Math.random() * (i + 1));
@@ -909,7 +927,7 @@
       state.screen = "quiz";
       state.page = 0;
       render();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      scrollToTopEverywhere();
     });
 
     screen.appendChild(form);
@@ -991,7 +1009,7 @@
       backBtn.addEventListener("click", function(){
         state.page -= 1;
         render();
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        scrollToTopEverywhere();
       });
       nav.appendChild(backBtn);
     } else {
@@ -1008,7 +1026,7 @@
       var pageComplete = currentPageQuestions.every(function(q){ return state.answers[q.id] !== undefined; });
       if (!pageComplete){
         document.getElementById("kc-error-banner").classList.add("show");
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        scrollToTopEverywhere();
         return;
       }
 
@@ -1016,14 +1034,14 @@
         var allComplete = state.order.every(function(q){ return state.answers[q.id] !== undefined; });
         if (!allComplete){
           document.getElementById("kc-error-banner").classList.add("show");
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          scrollToTopEverywhere();
           return;
         }
         submitTest();
       } else {
         state.page += 1;
         render();
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        scrollToTopEverywhere();
       }
     });
     nav.appendChild(nextBtn);
@@ -1084,7 +1102,7 @@
     // change, rien n'est perdu ni masqué pour la personne.
     state.screen = "results";
     render();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTopEverywhere();
 
     sendResultsToBackend(results);
   }
@@ -1125,18 +1143,15 @@
       .catch(function(err){
         console.error("[Kif'Cash] Échec de l'envoi :", err);
         state.submitting = false;
-        setSendStatus("error", "L'envoi automatique a rencontré un problème, mais vos résultats restent affichés ci-dessus.", true);
+        setSendStatus("error", "L'envoi automatique a rencontré un problème, mais vos résultats restent affichés ci-dessus.");
       });
   }
 
-  function setSendStatus(type, text, showRetry){
+  function setSendStatus(type, text){
     var statusEl = document.getElementById("kc-send-status");
     if (!statusEl) return;
     statusEl.className = "kc-send-status kc-send-status-" + type;
     statusEl.textContent = text;
-
-    var retryBtn = document.getElementById("kc-retry-btn");
-    if (retryBtn) retryBtn.hidden = !showRetry;
   }
 
   // ============================================================
@@ -1173,13 +1188,6 @@
     ]);
     screen.appendChild(statusEl);
 
-    var retryBtn = el("button", { type: "button", class: "kc-btn kc-btn-secondary", id: "kc-retry-btn" }, [document.createTextNode("Réessayer l'envoi")]);
-    retryBtn.hidden = true;
-    retryBtn.addEventListener("click", function(){
-      sendResultsToBackend(state.results);
-    });
-    screen.appendChild(retryBtn);
-
     // ---------- Présentation des 5 Saboteurs (accordéons) ----------
 
     var saboteursIntro = el("div", { class: "kc-saboteurs-intro" }, [
@@ -1193,7 +1201,7 @@
 
     results.ranking.forEach(function(item, index){
       var desc = SABOTEUR_DESCRIPTIONS[item.name];
-      var itemEl = el("div", { class: "kc-accordion-item" + (index === 0 ? " open" : "") });
+      var itemEl = el("div", { class: "kc-accordion-item" });
 
       var headerLabel = (index + 1) + ". " + item.name + ", " + item.score + " points";
       var chevron = el("svg", { class: "kc-accordion-chevron", viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg", html: '<path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' });
@@ -1228,7 +1236,7 @@
       el("h2", {}, [document.createTextNode("Et dans votre business, concrètement ?")]),
       el("p", {}, [document.createTextNode("Vous savez maintenant quels Saboteurs sont les plus présents chez vous.")]),
       el("p", {}, [
-        document.createTextNode("Le Déclic vous permet de partir de trois de vos propres comportements et d'observer ce qu'ils vous coûtent en argent, en temps et en encombrement mental.")
+        document.createTextNode("Le Déclic vous permet de partir de trois de vos propres comportements et d'observer ce qu'ils vous coûtent en argent, en temps et en encombrement mental. C'est gratuit et ludique.")
       ])
     ]);
 
@@ -1248,7 +1256,14 @@
     if (state.screen === "capture") renderCapture();
     else if (state.screen === "quiz") renderQuiz();
     else if (state.screen === "results") renderResults();
+
+    notifyParentResize();
+    // Rattrapage : les polices web (Mulish/Roboto) peuvent finir de
+    // charger après le rendu et changer légèrement la hauteur réelle.
+    setTimeout(notifyParentResize, 200);
   }
+
+  window.addEventListener("resize", notifyParentResize);
 
   render();
 
