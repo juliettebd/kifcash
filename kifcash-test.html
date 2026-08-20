@@ -246,6 +246,9 @@
     padding:15px 30px;
     cursor:pointer;
     transition:transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    display:inline-block;
+    text-decoration:none;
+    text-align:center;
   }
 
   .kc-btn-primary{
@@ -472,6 +475,113 @@
     margin-top:14px;
   }
 
+  /* ---------- SABOTEUR ACCORDIONS ---------- */
+
+  .kc-saboteurs-intro{
+    margin-top:44px;
+  }
+
+  .kc-saboteurs-intro h2{
+    font-size:1.25rem;
+    margin-bottom:12px;
+  }
+
+  .kc-saboteurs-intro p{
+    font-size:0.95rem;
+    line-height:1.6;
+    color:rgba(18,56,89,0.78);
+    margin:0 0 8px;
+  }
+
+  .kc-accordion{
+    margin-top:20px;
+  }
+
+  .kc-accordion-item{
+    border:1px solid var(--kc-line);
+    border-radius:8px;
+    margin-bottom:10px;
+    overflow:hidden;
+  }
+
+  .kc-accordion-header{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:14px 18px;
+    background:var(--kc-white);
+    border:none;
+    cursor:pointer;
+    text-align:left;
+    font-family:'Mulish', Arial, sans-serif;
+    font-weight:700;
+    font-size:0.95rem;
+    color:var(--kc-navy);
+  }
+
+  .kc-accordion-header:hover{
+    background:var(--kc-mist);
+  }
+
+  .kc-accordion-chevron{
+    flex-shrink:0;
+    width:18px; height:18px;
+    transition:transform 0.2s ease;
+    color:var(--kc-violet);
+  }
+
+  .kc-accordion-item.open .kc-accordion-chevron{
+    transform:rotate(180deg);
+  }
+
+  .kc-accordion-body{
+    display:none;
+    padding:4px 18px 20px;
+    border-top:1px solid var(--kc-line-soft);
+  }
+
+  .kc-accordion-item.open .kc-accordion-body{
+    display:block;
+  }
+
+  .kc-accordion-body p{
+    font-size:0.92rem;
+    line-height:1.6;
+    color:rgba(18,56,89,0.8);
+    margin:14px 0 0;
+  }
+
+  .kc-accordion-priority{
+    font-weight:500;
+  }
+
+  .kc-accordion-devise{
+    font-style:italic;
+    color:var(--kc-violet);
+  }
+
+  /* ---------- DÉCLIC CTA ---------- */
+
+  .kc-declic-block{
+    margin-top:40px;
+    padding-top:32px;
+    border-top:1px solid var(--kc-line-soft);
+  }
+
+  .kc-declic-block h2{
+    font-size:1.15rem;
+    margin-bottom:10px;
+  }
+
+  .kc-declic-block p{
+    font-size:0.95rem;
+    line-height:1.6;
+    color:rgba(18,56,89,0.78);
+    margin:0 0 20px;
+  }
+
   @media (max-width: 560px){
     .kc-header{ padding:16px 18px; flex-wrap:wrap; }
     .kc-progress{ order:3; max-width:none; width:100%; }
@@ -590,6 +700,56 @@
     4: "D'accord",
     5: "Tout à fait d'accord"
   };
+
+  // ============================================================
+  // DESCRIPTIONS DES 5 SABOTEURS — écran de résultats uniquement.
+  // Textes recopiés tels quels, ne pas reformuler.
+  // ============================================================
+
+  var SABOTEUR_DESCRIPTIONS = {
+    "Sauveteuse Altruiste": {
+      paragraphs: [
+        "La Sauveteuse Altruiste est généreuse et attentive aux autres. Aider, faciliter, partager ses ressources ou donner davantage lui vient naturellement. Elle accorde beaucoup de valeur aux relations et à ce qu'elle peut apporter aux personnes qui l'entourent.",
+        "Cette générosité peut parfois lui coûter cher. Elle peut faire passer les besoins des autres avant les siens, donner plus que prévu, accepter des conditions qui l'arrangent peu ou avoir davantage de facilité à offrir qu'à recevoir. À force, l'équilibre entre ce qu'elle donne et ce qu'elle reçoit peut sérieusement pencher du même côté."
+      ],
+      priority: "Ce qui compte pour elle : pouvoir aider sans devenir égoïste ou indifférente aux autres.",
+      devise: "Les autres d'abord, moi après."
+    },
+    "Persévérante Insatiable": {
+      paragraphs: [
+        "La Persévérante Insatiable est travailleuse, engagée et capable de tenir là où beaucoup auraient abandonné. Elle aime avancer, progresser et savoir qu'elle a réellement donné le meilleur d'elle-même.",
+        "Cette capacité à persévérer peut cependant devenir difficile à arrêter. Quand quelque chose ne fonctionne pas, elle peut travailler davantage, chercher à mieux faire ou continuer à pousser plutôt que remettre en question l'effort lui-même. Le repos, la délégation ou la satisfaction d'un objectif atteint trouvent alors difficilement leur place."
+      ],
+      priority: "Ce qui compte pour elle : savoir qu'elle a fait tout ce qui était en son pouvoir pour réussir.",
+      devise: "Encore un effort."
+    },
+    "Serrurière de Fortune": {
+      paragraphs: [
+        "La Serrurière de Fortune est prudente avec l'argent. Elle sait anticiper, constituer des réserves et réfléchir avant de prendre une décision financière. Là où d'autres foncent, elle prend le temps d'évaluer ce qu'elle risque.",
+        "Cette prudence peut finir par freiner ses décisions. Elle peut reporter une dépense ou un investissement pourtant pertinent, écarter une opportunité trop incertaine ou conserver davantage que nécessaire pour se sentir tranquille. La recherche de sécurité prend alors le dessus sur ce que cet argent pourrait aussi lui permettre."
+      ],
+      priority: "Ce qui compte pour elle : savoir qu'elle pourra faire face, même si les choses tournent mal.",
+      devise: "Mieux vaut être prudente."
+    },
+    "Rebelle Intègre": {
+      paragraphs: [
+        "La Rebelle Intègre est indépendante et profondément attachée à ses valeurs. Elle sait dire non à ce qui ne lui ressemble pas et refuse volontiers les règles qu'elle juge absurdes, artificielles ou contraires à ses principes. Sa liberté de choix compte énormément.",
+        "Cette indépendance peut aussi avoir un prix. Elle peut rejeter une pratique commerciale, une façon de vendre ou une opportunité rentable parce qu'elle refuse de fonctionner selon des codes qui ne sont pas les siens. Elle peut également se méfier de certaines formes de réussite et accepter de gagner moins pour préserver sa liberté."
+      ],
+      priority: "Ce qui compte pour elle : réussir sans devoir devenir quelqu'un qu'elle n'a pas envie d'être.",
+      devise: "Pas à n'importe quel prix."
+    },
+    "Prospère Saboteuse": {
+      paragraphs: [
+        "La Prospère Saboteuse aime profiter de ce que son argent et son business peuvent lui permettre de vivre. Elle sait créer du mouvement, saisir des opportunités et ouvrir de nouvelles possibilités. Les idées, les projets et l'envie d'en profiter peuvent être de puissants moteurs pour elle.",
+        "La difficulté apparaît lorsque cet élan doit devenir stable. L'argent peut repartir rapidement, une nouvelle idée détourner son attention, une étape importante être reportée ou une réussite minimisée. Maintenir dans la durée ce qu'elle a créé peut lui demander davantage que de créer la prochaine opportunité."
+      ],
+      priority: "Ce qui compte pour elle : pouvoir se faire plaisir, profiter de la vie et garder ouvertes les possibilités qui l'enthousiasment.",
+      devise: "La vie est trop courte."
+    }
+  };
+
+  var DECLIC_URL = "https://www.chenillepapillon.be/saboteurs-financiers-declic";
 
   // ============================================================
   // ÉTAT
@@ -1019,6 +1179,62 @@
       sendResultsToBackend(state.results);
     });
     screen.appendChild(retryBtn);
+
+    // ---------- Présentation des 5 Saboteurs (accordéons) ----------
+
+    var saboteursIntro = el("div", { class: "kc-saboteurs-intro" }, [
+      el("h2", {}, [document.createTextNode("Faites connaissance avec vos Saboteurs")]),
+      el("p", {}, [document.createTextNode("Votre classement vous donne une première indication, mais votre Saboteur principal ne raconte pas toute l'histoire. Plusieurs peuvent intervenir dans vos décisions et vos comportements, parfois de façon très différente selon les situations.")]),
+      el("p", {}, [document.createTextNode("Commencez par découvrir ce qui caractérise chacun d'eux.")])
+    ]);
+    screen.appendChild(saboteursIntro);
+
+    var accordion = el("div", { class: "kc-accordion" });
+
+    results.ranking.forEach(function(item, index){
+      var desc = SABOTEUR_DESCRIPTIONS[item.name];
+      var itemEl = el("div", { class: "kc-accordion-item" + (index === 0 ? " open" : "") });
+
+      var headerLabel = (index + 1) + ". " + item.name + ", " + item.score + " points";
+      var chevron = el("svg", { class: "kc-accordion-chevron", viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg", html: '<path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' });
+
+      var header = el("button", { type: "button", class: "kc-accordion-header" }, [
+        el("span", {}, [document.createTextNode(headerLabel)]),
+        chevron
+      ]);
+      header.addEventListener("click", function(){
+        itemEl.classList.toggle("open");
+      });
+
+      var body = el("div", { class: "kc-accordion-body" });
+      if (desc){
+        desc.paragraphs.forEach(function(paragraph){
+          body.appendChild(el("p", {}, [document.createTextNode(paragraph)]));
+        });
+        body.appendChild(el("p", { class: "kc-accordion-priority" }, [document.createTextNode(desc.priority)]));
+        body.appendChild(el("p", { class: "kc-accordion-devise" }, [document.createTextNode("Sa devise : " + desc.devise)]));
+      }
+
+      itemEl.appendChild(header);
+      itemEl.appendChild(body);
+      accordion.appendChild(itemEl);
+    });
+
+    screen.appendChild(accordion);
+
+    // ---------- Bloc Déclic ----------
+
+    var declicBlock = el("div", { class: "kc-declic-block" }, [
+      el("h2", {}, [document.createTextNode("Et dans votre business, concrètement ?")]),
+      el("p", {}, [document.createTextNode("Vous savez maintenant quels Saboteurs sont les plus présents chez vous.")]),
+      el("p", {}, [
+        document.createTextNode("Le Déclic vous permet de partir de trois de vos propres comportements et d'observer ce qu'ils vous coûtent en argent, en temps et en encombrement mental.")
+      ])
+    ]);
+
+    var declicBtn = el("a", { href: DECLIC_URL, class: "kc-btn kc-btn-primary" }, [document.createTextNode("Faire mon Déclic")]);
+    declicBlock.appendChild(declicBtn);
+    screen.appendChild(declicBlock);
 
     main.appendChild(screen);
   }
