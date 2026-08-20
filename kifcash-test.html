@@ -758,11 +758,47 @@
     participant: { prenom:"", email:"", pays:"" },
     order: shuffle(QUESTIONS.slice()),
     results: null,
-    submitting: false
+    submitting: false,
+    debugMode: false
   };
 
   var pages = chunk(state.order, QUESTIONS_PER_PAGE);
   var totalPages = pages.length;
+
+  // ============================================================
+  // MODE DEBUG — usage interne uniquement (jamais exposé aux
+  // visiteuses). ?debug=results affiche directement l'écran de
+  // résultats avec des données fictives, sans passer par la
+  // capture ni les 60 questions, et SANS AUCUN appel réseau
+  // (aucune écriture Firestore/Sheet/mail/SIO). Pratique pour
+  // vérifier rapidement le rendu visuel de cet écran.
+  // ============================================================
+
+  var urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("debug") === "results"){
+    state.debugMode = true;
+    state.participant = { prenom: "Prénom Test", email: "debug@chenillepapillon.be", pays: "Belgique" };
+    state.results = {
+      scores: {
+        "Sauveteuse Altruiste": 44,
+        "Persévérante Insatiable": 38,
+        "Serrurière de Fortune": 51,
+        "Rebelle Intègre": 27,
+        "Prospère Saboteuse": 33
+      },
+      ranking: [
+        { name: "Serrurière de Fortune", score: 51 },
+        { name: "Sauveteuse Altruiste", score: 44 },
+        { name: "Persévérante Insatiable", score: 38 },
+        { name: "Prospère Saboteuse", score: 33 },
+        { name: "Rebelle Intègre", score: 27 }
+      ],
+      dominant: { name: "Serrurière de Fortune", score: 51 },
+      secondaire: { name: "Sauveteuse Altruiste", score: 44 },
+      responses: []
+    };
+    state.screen = "results";
+  }
 
   // ============================================================
   // UTILITAIRES
@@ -1183,9 +1219,13 @@
     });
     screen.appendChild(list);
 
-    var statusEl = el("div", { class: "kc-send-status kc-send-status-pending", id: "kc-send-status" }, [
-      document.createTextNode("Envoi de vos résultats par email en cours…")
-    ]);
+    var statusEl = state.debugMode
+      ? el("div", { class: "kc-send-status kc-send-status-info", id: "kc-send-status" }, [
+          document.createTextNode("Mode debug : données fictives, aucun envoi n'a été effectué.")
+        ])
+      : el("div", { class: "kc-send-status kc-send-status-pending", id: "kc-send-status" }, [
+          document.createTextNode("Envoi de vos résultats par email en cours…")
+        ]);
     screen.appendChild(statusEl);
 
     // ---------- Présentation des 5 Saboteurs (accordéons) ----------
