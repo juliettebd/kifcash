@@ -601,6 +601,15 @@
 <script>
 (function(){
 
+  // Empêche le navigateur de restaurer automatiquement la position
+  // de scroll d'un chargement précédent de cette même URL (comportement
+  // par défaut de Chrome au rechargement), qui pouvait faire apparaître
+  // la page au milieu du contenu au lieu du haut.
+  if ("scrollRestoration" in history) {
+    history.scrollRestoration = "manual";
+  }
+  window.scrollTo(0, 0);
+
   // ============================================================
   // CONFIGURATION
   // ============================================================
