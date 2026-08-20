@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kif'Cash — Admin</title>
+<style>
+  :root{
+    --kc-navy:#123859;
+    --kc-violet:#8D1E81;
+    --kc-rose:#E60F72;
+    --kc-mist:#F5F5F2;
+    --kc-line: rgba(18,56,89,0.15);
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background:var(--kc-mist);
+    color:var(--kc-navy);
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px;
+    background:#FFFFFF;
+    border-bottom:1px solid var(--kc-line);
+  }
+  header .kc-brand{ font-weight:700; font-size:1rem; }
+  header button{
+    background:none; border:1px solid var(--kc-line); border-radius:6px;
+    padding:7px 14px; font-size:0.85rem; cursor:pointer; color:var(--kc-navy);
+  }
+  main{ padding:28px 24px; max-width:1000px; margin:0 auto; }
+
+  /* login */
+  .kc-login{
+    max-width:340px; margin:80px auto; background:#fff; border:1px solid var(--kc-line);
+    border-radius:8px; padding:28px;
+  }
+  .kc-login h1{ font-size:1.1rem; margin:0 0 18px; }
+  .kc-login label{ display:block; font-size:0.82rem; font-weight:600; margin:12px 0 5px; }
+  .kc-login input{
+    width:100%; padding:10px 12px; border:1px solid var(--kc-line); border-radius:6px; font-size:0.95rem;
+  }
+  .kc-login button{
+    margin-top:18px; width:100%; padding:11px; border:none; border-radius:6px;
+    background:var(--kc-navy); color:#fff; font-weight:600; cursor:pointer; font-size:0.9rem;
+  }
+  .kc-login-error{ color:var(--kc-rose); font-size:0.82rem; margin-top:10px; display:none; }
+
+  /* toolbar */
+  .kc-toolbar{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px;
+  }
+  .kc-count{ font-size:0.85rem; color:rgba(18,56,89,0.65); }
+  .kc-count strong{ color:var(--kc-navy); font-size:1.05rem; }
+  .kc-actions{ display:flex; gap:8px; }
+  .kc-actions button{
+    font-size:0.82rem; padding:8px 13px; border:1px solid var(--kc-line); border-radius:6px;
+    background:#fff; cursor:pointer; color:var(--kc-navy);
+  }
+  .kc-actions button:hover{ border-color:var(--kc-navy); }
+
+  /* table */
+  table{ width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--kc-line); border-radius:8px; overflow:hidden; }
+  th, td{ text-align:left; padding:10px 12px; font-size:0.85rem; border-bottom:1px solid var(--kc-line); }
+  th{ background:var(--kc-mist); font-weight:700; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.03em; color:rgba(18,56,89,0.7); }
+  tbody tr{ cursor:pointer; }
+  tbody tr:hover{ background:var(--kc-mist); }
+  tbody tr:last-child td{ border-bottom:none; }
+
+  .kc-empty{ padding:40px; text-align:center; color:rgba(18,56,89,0.55); font-size:0.9rem; }
+  .kc-loading{ padding:40px; text-align:center; color:rgba(18,56,89,0.55); font-size:0.9rem; }
+
+  /* detail */
+  .kc-back{
+    background:none; border:none; color:var(--kc-violet); font-size:0.85rem; cursor:pointer;
+    padding:0; margin-bottom:16px; font-weight:600;
+  }
+  .kc-detail-card{ background:#fff; border:1px solid var(--kc-line); border-radius:8px; padding:22px; margin-bottom:20px; }
+  .kc-detail-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:14px; }
+  .kc-detail-grid div span{ display:block; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.03em; color:rgba(18,56,89,0.5); margin-bottom:3px; }
+  .kc-detail-grid div strong{ font-size:0.92rem; }
+
+  .kc-ranking-row{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--kc-line); font-size:0.88rem; }
+  .kc-ranking-row:last-child{ border-bottom:none; }
+  .kc-ranking-row .rank{ font-weight:700; color:rgba(18,56,89,0.4); width:22px; }
+  .kc-ranking-row .name{ flex:1; }
+  .kc-ranking-row .score{ font-weight:700; }
+
+  h2.kc-section-title{ font-size:0.95rem; margin:26px 0 10px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="kc-brand">Kif'Cash — Admin</div>
+  <button id="kc-logout-btn" hidden>Se déconnecter</button>
+</header>
+<main id="kc-main"></main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import {
+    getFirestore, collection, getDocs, doc, getDoc, query, orderBy
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  // Config publique du SDK client (pas un secret : elle est prévue
+  // pour être visible côté navigateur, la vraie protection vient des
+  // règles de sécurité Firestore + Firebase Auth).
+  var firebaseConfig = {
+    apiKey: "AIzaSyBKKifpbQ_eWfw9HMvU4KgMBzinlvOzS5o",
+    authDomain: "kif-cash-ctwq3e.firebaseapp.com",
+    projectId: "kif-cash-ctwq3e",
+    storageBucket: "kif-cash-ctwq3e.firebasestorage.app",
+    messagingSenderId: "27460930341",
+    appId: "1:27460930341:web:2da9766dc4daaa29c728cc"
+  };
+
+  var app = initializeApp(firebaseConfig);
+  var auth = getAuth(app);
+  var db = getFirestore(app);
+
+  // ============================================================
+  // LES 60 AFFIRMATIONS — même source que kifcash-test.html,
+  // utilisée ici uniquement pour réafficher le texte dans le détail.
+  // ============================================================
+
+  var QUESTIONS = [
+    { id:1, saboteur:"Sauveteuse Altruiste", facette:"Culpabilité à garder", text:"Garder de l'argent pour moi alors qu'un proche en aurait besoin peut me faire culpabiliser." },
+    { id:2, saboteur:"Sauveteuse Altruiste", facette:"Besoins personnels relégués", text:"Mes propres besoins passent facilement après ceux des personnes qui comptent sur moi." },
+    { id:3, saboteur:"Sauveteuse Altruiste", facette:"Prix sacrifiés", text:"Il m'arrive de revoir mes tarifs à la baisse quand je sais qu'une cliente a peu de moyens." },
+    { id:4, saboteur:"Sauveteuse Altruiste", facette:"Sur-service", text:"Dans mon travail, je dépasse facilement ce qui était prévu pour rendre service." },
+    { id:5, saboteur:"Sauveteuse Altruiste", facette:"Limites difficiles à poser", text:"Dire non à une demande d'aide me met mal à l'aise, même quand elle dépasse mes limites." },
+    { id:6, saboteur:"Sauveteuse Altruiste", facette:"Tolérance financière envers les autres", text:"Je peux laisser passer un retard de paiement parce que je comprends la situation de la personne." },
+    { id:7, saboteur:"Sauveteuse Altruiste", facette:"Loyauté coûteuse", text:"Je reste parfois engagée dans une relation professionnelle peu avantageuse parce que je ne veux pas abandonner l'autre." },
+    { id:8, saboteur:"Sauveteuse Altruiste", facette:"Difficulté à recevoir", text:"Recevoir beaucoup sans pouvoir rendre la pareille me met mal à l'aise." },
+    { id:9, saboteur:"Sauveteuse Altruiste", facette:"Culpabilité du plaisir", text:"Dépenser une somme importante uniquement pour mon plaisir peut me sembler égoïste." },
+    { id:10, saboteur:"Sauveteuse Altruiste", facette:"Valeur personnelle liée à l'utilité", text:"Me sentir utile aux autres compte beaucoup dans l'image que j'ai de moi-même." },
+    { id:11, saboteur:"Sauveteuse Altruiste", facette:"Attente de réciprocité et ressentiment", text:"Je peux ressentir de la frustration quand les autres ne font pas pour moi ce que je ferais spontanément pour eux." },
+    { id:12, saboteur:"Sauveteuse Altruiste", facette:"Difficulté à demander de l'aide", text:"Demander de l'aide pour moi-même m'est souvent plus difficile que d'en proposer." },
+    { id:13, saboteur:"Persévérante Insatiable", facette:"Argent gagné par l'effort", text:"Pour gagner plus, j'ai l'impression qu'il faut forcément travailler plus." },
+    { id:14, saboteur:"Persévérante Insatiable", facette:"Culpabilité du repos", text:"Prendre du temps pour me reposer alors que je pourrais travailler me fait culpabiliser." },
+    { id:15, saboteur:"Persévérante Insatiable", facette:"Jamais assez", text:"Même après une journée bien remplie, j'ai rarement l'impression d'en avoir fait assez." },
+    { id:16, saboteur:"Persévérante Insatiable", facette:"Valeur personnelle par le travail", text:"La quantité de travail que j'accomplis influence fortement la satisfaction que j'ai de moi-même." },
+    { id:17, saboteur:"Persévérante Insatiable", facette:"Difficulté à déléguer", text:"Déléguer m'est difficile lorsque je pense pouvoir obtenir un meilleur résultat moi-même." },
+    { id:18, saboteur:"Persévérante Insatiable", facette:"Réponse à l'échec par plus d'effort", text:"Quand les résultats ne sont pas au rendez-vous, mon premier réflexe est d'en faire plus." },
+    { id:19, saboteur:"Persévérante Insatiable", facette:"Besoin d'être occupée", text:"Une journée sans avoir été productive peut me laisser une sensation désagréable." },
+    { id:20, saboteur:"Persévérante Insatiable", facette:"Perfectionnisme", text:"Terminer un travail m'est difficile tant que je vois encore quelque chose à améliorer." },
+    { id:21, saboteur:"Persévérante Insatiable", facette:"Dépassement de ses limites", text:"Je continue à travailler même lorsque je sens que j'aurais besoin de m'arrêter." },
+    { id:22, saboteur:"Persévérante Insatiable", facette:"Vie reportée à plus tard", text:"Les loisirs, les pauses ou les vacances attendent facilement qu'une période plus calme arrive." },
+    { id:23, saboteur:"Persévérante Insatiable", facette:"Incapacité à savourer", text:"Une fois un objectif atteint, mon attention se porte rapidement sur le suivant." },
+    { id:24, saboteur:"Persévérante Insatiable", facette:"Acharnement sur ce qui ne fonctionne plus", text:"Je peux consacrer longtemps du temps et de l'énergie à un projet avant d'accepter qu'il ne fonctionne pas." },
+    { id:25, saboteur:"Serrurière de Fortune", facette:"Peur de perdre", text:"L'idée de perdre une somme d'argent importante provoque chez moi beaucoup d'anxiété." },
+    { id:26, saboteur:"Serrurière de Fortune", facette:"Dépenses reportées", text:"Je repousse certaines dépenses alors que je sais qu'elles seraient utiles." },
+    { id:27, saboteur:"Serrurière de Fortune", facette:"Aversion au risque", text:"Investir de l'argent sans garantie de résultat me met mal à l'aise." },
+    { id:28, saboteur:"Serrurière de Fortune", facette:"Argent immobilisé", text:"Je préfère conserver mon argent disponible plutôt que le placer dans une opportunité incertaine." },
+    { id:29, saboteur:"Serrurière de Fortune", facette:"Besoin de réserves", text:"Voir mes réserves diminuer m'inquiète, même lorsque la dépense était prévue." },
+    { id:30, saboteur:"Serrurière de Fortune", facette:"Sécurité avant rendement", text:"Entre une option sûre et une autre potentiellement plus rentable, je privilégie facilement la première." },
+    { id:31, saboteur:"Serrurière de Fortune", facette:"Décisions financières ralenties", text:"Une décision qui engage une somme importante peut me demander beaucoup de temps de réflexion." },
+    { id:32, saboteur:"Serrurière de Fortune", facette:"Opportunités refusées", text:"J'ai déjà renoncé à une opportunité intéressante parce que le risque financier me semblait trop élevé." },
+    { id:33, saboteur:"Serrurière de Fortune", facette:"Anxiété à dépenser", text:"Sortir une grosse somme peut m'inquiéter alors même que j'en ai les moyens." },
+    { id:34, saboteur:"Serrurière de Fortune", facette:"Plaisir conditionné à la sécurité", text:"Même avec des réserves confortables, j'ai du mal à considérer que j'en ai assez pour profiter librement de mon argent." },
+    { id:35, saboteur:"Serrurière de Fortune", facette:"Sous-investissement dans le business", text:"La prudence financière m'amène quelquefois à limiter les investissements dans mon activité." },
+    { id:36, saboteur:"Serrurière de Fortune", facette:"Besoin de contrôle", text:"Savoir précisément où va mon argent contribue fortement à mon sentiment de sécurité." },
+    { id:37, saboteur:"Rebelle Intègre", facette:"Intégrité financière", text:"Je peux refuser d'emblée une opportunité intéressante si elle exige de moi une concession, même minime." },
+    { id:38, saboteur:"Rebelle Intègre", facette:"Rejet des codes commerciaux", text:"Certaines pratiques de vente me rebutent dès qu'elles me paraissent trop commerciales." },
+    { id:39, saboteur:"Rebelle Intègre", facette:"Méfiance envers la richesse", text:"Les personnes qui affichent beaucoup leur réussite financière peuvent éveiller ma méfiance." },
+    { id:40, saboteur:"Rebelle Intègre", facette:"Liberté avant rentabilité", text:"Je suis prête à gagner moins si cela me permet de préserver ma liberté." },
+    { id:41, saboteur:"Rebelle Intègre", facette:"Résistance aux conseils", text:"Lorsqu'on me dit comment je devrais gérer mon argent ou mon business, j'ai facilement envie de faire autrement." },
+    { id:42, saboteur:"Rebelle Intègre", facette:"Rejet des structures financières", text:"Les budgets, règles ou systèmes de gestion me donnent vite une sensation de contrainte." },
+    { id:43, saboteur:"Rebelle Intègre", facette:"Refus du conformisme", text:"Une stratégie peut perdre de son attrait à mes yeux lorsqu'elle devient la façon de faire de tout le monde." },
+    { id:44, saboteur:"Rebelle Intègre", facette:"Besoin de faire à sa manière", text:"Je choisis parfois une voie plus compliquée simplement parce qu'elle me permet de procéder à ma façon." },
+    { id:45, saboteur:"Rebelle Intègre", facette:"Coût accepté de l'indépendance", text:"Je peux accepter de perdre financièrement plutôt que de dépendre de quelqu'un ou de devoir lui rendre des comptes." },
+    { id:46, saboteur:"Rebelle Intègre", facette:"Rapport conflictuel à la vente", text:"Certaines techniques de vente efficaces me semblent incompatibles avec la manière dont je veux exercer mon métier." },
+    { id:47, saboteur:"Rebelle Intègre", facette:"Jugement de la réussite financière", text:"Accorder beaucoup d'importance à l'argent ou au statut social peut me donner une mauvaise image de quelqu'un." },
+    { id:48, saboteur:"Rebelle Intègre", facette:"Conflit valeurs / prospérité", text:"Il m'arrive de ressentir une tension entre gagner plus et rester fidèle à mes convictions." },
+    { id:49, saboteur:"Prospère Saboteuse", facette:"Fuites d'argent", text:"Quand mes revenus augmentent, mes dépenses ont vite fait de suivre le même chemin." },
+    { id:50, saboteur:"Prospère Saboteuse", facette:"Instabilité après une hausse de revenus", text:"Une bonne période financière ne se transforme pas forcément chez moi en stabilité durable." },
+    { id:51, saboteur:"Prospère Saboteuse", facette:"Impulsivité financière", text:"Il m'arrive de faire une dépense importante sur une impulsion." },
+    { id:52, saboteur:"Prospère Saboteuse", facette:"Faible anticipation", text:"Je compte facilement sur ma capacité à générer de nouveaux revenus plutôt que de tout prévoir à l'avance." },
+    { id:53, saboteur:"Prospère Saboteuse", facette:"Regret après dépense", text:"Certaines décisions d'achat me semblent moins bonnes une fois l'enthousiasme passé." },
+    { id:54, saboteur:"Prospère Saboteuse", facette:"Dispersion", text:"Une nouvelle idée prometteuse peut détourner mon attention d'un projet déjà bien engagé." },
+    { id:55, saboteur:"Prospère Saboteuse", facette:"Sabotage à l'approche du succès", text:"Quand un projet commence vraiment à décoller, il peut m'arriver de ralentir ou de déplacer mon attention ailleurs." },
+    { id:56, saboteur:"Prospère Saboteuse", facette:"Ambition retenue", text:"Certaines de mes ambitions financières me mettent suffisamment mal à l'aise pour que je préfère ne pas trop les afficher." },
+    { id:57, saboteur:"Prospère Saboteuse", facette:"Réussites minimisées", text:"Je banalise facilement une réussite une fois qu'elle est acquise." },
+    { id:58, saboteur:"Prospère Saboteuse", facette:"Procrastination stratégique", text:"Je repousse parfois des actions dont je sais pourtant qu'elles pourraient faire franchir un vrai cap à mon business." },
+    { id:59, saboteur:"Prospère Saboteuse", facette:"Inconfort avec la visibilité", text:"L'idée que ma réussite puisse me rendre beaucoup plus visible suscite chez moi une certaine appréhension." },
+    { id:60, saboteur:"Prospère Saboteuse", facette:"Difficulté à maintenir un nouveau niveau de réussite", text:"Après une période particulièrement prospère, il m'est difficile de maintenir durablement ce nouveau niveau." }
+  ];
+
+  var QUESTIONS_BY_ID = {};
+  QUESTIONS.forEach(function(q){ QUESTIONS_BY_ID[q.id] = q; });
+
+  var SABOTEUR_ORDER = [
+    "Sauveteuse Altruiste",
+    "Persévérante Insatiable",
+    "Serrurière de Fortune",
+    "Rebelle Intègre",
+    "Prospère Saboteuse"
+  ];
+
+  // ============================================================
+  // ÉTAT
+  // ============================================================
+
+  var state = {
+    view: "loading",       // loading | login | list | detail
+    joinedTests: [],
+    selectedTest: null,
+    loginError: ""
+  };
+
+  // ============================================================
+  // UTILITAIRES DOM
+  // ============================================================
+
+  function el(tag, attrs, children){
+    var node = document.createElement(tag);
+    attrs = attrs || {};
+    for (var key in attrs){
+      if (key === "class") node.className = attrs[key];
+      else if (key === "html") node.innerHTML = attrs[key];
+      else node.setAttribute(key, attrs[key]);
+    }
+    (children || []).forEach(function(child){ if (child) node.appendChild(child); });
+    return node;
+  }
+
+  function formatDate(value){
+    var d = (value && typeof value.toDate === "function") ? value.toDate() : new Date(value);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("fr-BE") + " " + d.toLocaleTimeString("fr-BE", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function csvEscape(value){
+    var str = (value === null || value === undefined) ? "" : String(value);
+    if (/[",\n]/.test(str)) str = '"' + str.replace(/"/g, '""') + '"';
+    return str;
+  }
+
+  function downloadCsv(filename, rows){
+    var content = rows.map(function(row){ return row.map(csvEscape).join(","); }).join("\r\n");
+    var blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  // ============================================================
+  // AUTHENTIFICATION
+  // ============================================================
+
+  document.getElementById("kc-logout-btn").addEventListener("click", function(){
+    signOut(auth);
+  });
+
+  onAuthStateChanged(auth, function(user){
+    if (!user){
+      document.getElementById("kc-logout-btn").hidden = true;
+      state.view = "login";
+      render();
+      return;
+    }
+
+    getDoc(doc(db, "admins", user.uid)).then(function(adminDoc){
+      if (!adminDoc.exists()){
+        signOut(auth);
+        state.view = "login";
+        state.loginError = "Ce compte n'a pas les droits admin.";
+        render();
+        return;
+      }
+      document.getElementById("kc-logout-btn").hidden = false;
+      loadTests();
+    }).catch(function(err){
+      console.error(err);
+      signOut(auth);
+      state.view = "login";
+      state.loginError = "Erreur de vérification des droits admin.";
+      render();
+    });
+  });
+
+  // ============================================================
+  // CHARGEMENT DES DONNÉES (jointure tests + participants)
+  // ============================================================
+
+  function loadTests(){
+    state.view = "loading";
+    render();
+
+    Promise.all([
+      getDocs(query(collection(db, "tests"), orderBy("createdAt", "desc"))),
+      getDocs(collection(db, "participants"))
+    ]).then(function(results){
+      var testsSnap = results[0];
+      var participantsSnap = results[1];
+
+      var participantsById = {};
+      participantsSnap.forEach(function(docSnap){
+        participantsById[docSnap.id] = docSnap.data();
+      });
+
+      state.joinedTests = [];
+      testsSnap.forEach(function(docSnap){
+        var testData = docSnap.data();
+        var participant = participantsById[testData.participantId] || {};
+        state.joinedTests.push({
+          testId: docSnap.id,
+          participantId: testData.participantId,
+          testVersion: testData.testVersion,
+          createdAt: testData.createdAt,
+          scores: testData.scores,
+          ranking: testData.ranking,
+          dominant: testData.dominant,
+          secondaire: testData.secondaire,
+          responses: testData.responses,
+          prenom: participant.prenom || "—",
+          email: participant.email || "—",
+          pays: participant.pays || "—"
+        });
+      });
+
+      state.view = "list";
+      render();
+    }).catch(function(err){
+      console.error(err);
+      state.view = "list";
+      state.joinedTests = [];
+      render();
+    });
+  }
+
+  // ============================================================
+  // ÉCRAN — LOGIN
+  // ============================================================
+
+  function renderLogin(){
+    var main = document.getElementById("kc-main");
+    main.innerHTML = "";
+
+    var box = el("div", { class: "kc-login" });
+    box.appendChild(el("h1", {}, [document.createTextNode("Connexion admin")]));
+
+    var emailInput = el("input", { type: "email", id: "kc-login-email", autocomplete: "username" });
+    var passInput = el("input", { type: "password", id: "kc-login-password", autocomplete: "current-password" });
+
+    box.appendChild(el("label", { for: "kc-login-email" }, [document.createTextNode("Email")]));
+    box.appendChild(emailInput);
+    box.appendChild(el("label", { for: "kc-login-password" }, [document.createTextNode("Mot de passe")]));
+    box.appendChild(passInput);
+
+    var errorEl = el("div", { class: "kc-login-error", id: "kc-login-error" }, [document.createTextNode(state.loginError || "")]);
+    if (state.loginError) errorEl.style.display = "block";
+    box.appendChild(errorEl);
+
+    var submitBtn = el("button", { type: "button" }, [document.createTextNode("Se connecter")]);
+    submitBtn.addEventListener("click", function(){
+      state.loginError = "";
+      signInWithEmailAndPassword(auth, emailInput.value.trim(), passInput.value)
+        .catch(function(err){
+          state.loginError = "Identifiants incorrects.";
+          console.error(err);
+          render();
+        });
+    });
+    box.appendChild(submitBtn);
+
+    main.appendChild(box);
+  }
+
+  // ============================================================
+  // ÉCRAN — LISTE DES TESTS
+  // ============================================================
+
+  function renderList(){
+    var main = document.getElementById("kc-main");
+    main.innerHTML = "";
+
+    var toolbar = el("div", { class: "kc-toolbar" });
+    toolbar.appendChild(el("div", { class: "kc-count" }, [
+      el("strong", {}, [document.createTextNode(String(state.joinedTests.length))]),
+      document.createTextNode(" test(s) au total")
+    ]));
+
+    var actions = el("div", { class: "kc-actions" });
+    var exportTestsBtn = el("button", {}, [document.createTextNode("Export Tests (CSV)")]);
+    exportTestsBtn.addEventListener("click", exportTestsCsv);
+    var exportResponsesBtn = el("button", {}, [document.createTextNode("Export Réponses (CSV)")]);
+    exportResponsesBtn.addEventListener("click", exportResponsesCsv);
+    actions.appendChild(exportTestsBtn);
+    actions.appendChild(exportResponsesBtn);
+    toolbar.appendChild(actions);
+
+    main.appendChild(toolbar);
+
+    if (!state.joinedTests.length){
+      main.appendChild(el("div", { class: "kc-empty" }, [document.createTextNode("Aucun test enregistré pour l'instant.")]));
+      return;
+    }
+
+    var table = el("table");
+    var thead = el("thead", {}, [el("tr", {}, [
+      el("th", {}, [document.createTextNode("Date")]),
+      el("th", {}, [document.createTextNode("Prénom")]),
+      el("th", {}, [document.createTextNode("Email")]),
+      el("th", {}, [document.createTextNode("Pays")]),
+      el("th", {}, [document.createTextNode("Saboteur dominant")]),
+      el("th", {}, [document.createTextNode("Score")])
+    ])]);
+    table.appendChild(thead);
+
+    var tbody = el("tbody");
+    state.joinedTests.forEach(function(t){
+      var row = el("tr", {}, [
+        el("td", {}, [document.createTextNode(formatDate(t.createdAt))]),
+        el("td", {}, [document.createTextNode(t.prenom)]),
+        el("td", {}, [document.createTextNode(t.email)]),
+        el("td", {}, [document.createTextNode(t.pays)]),
+        el("td", {}, [document.createTextNode(t.dominant ? t.dominant.name : "—")]),
+        el("td", {}, [document.createTextNode(t.dominant ? String(t.dominant.score) : "—")])
+      ]);
+      row.addEventListener("click", function(){
+        state.selectedTest = t;
+        state.view = "detail";
+        render();
+      });
+      tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+
+    main.appendChild(table);
+  }
+
+  // ============================================================
+  // ÉCRAN — DÉTAIL D'UN TEST
+  // ============================================================
+
+  function renderDetail(){
+    var main = document.getElementById("kc-main");
+    main.innerHTML = "";
+
+    var t = state.selectedTest;
+
+    var backBtn = el("button", { class: "kc-back" }, [document.createTextNode("← Retour à la liste")]);
+    backBtn.addEventListener("click", function(){
+      state.view = "list";
+      render();
+    });
+    main.appendChild(backBtn);
+
+    var infoCard = el("div", { class: "kc-detail-card" });
+    var grid = el("div", { class: "kc-detail-grid" }, [
+      detailField("Prénom", t.prenom),
+      detailField("Email", t.email),
+      detailField("Pays", t.pays),
+      detailField("Date", formatDate(t.createdAt)),
+      detailField("Version du test", t.testVersion)
+    ]);
+    infoCard.appendChild(grid);
+    main.appendChild(infoCard);
+
+    main.appendChild(el("h2", { class: "kc-section-title" }, [document.createTextNode("Classement")]));
+    var rankingCard = el("div", { class: "kc-detail-card" });
+    (t.ranking || []).forEach(function(item, index){
+      rankingCard.appendChild(el("div", { class: "kc-ranking-row" }, [
+        el("span", { class: "rank" }, [document.createTextNode("#" + (index + 1))]),
+        el("span", { class: "name" }, [document.createTextNode(item.name)]),
+        el("span", { class: "score" }, [document.createTextNode(String(item.score))])
+      ]));
+    });
+    main.appendChild(rankingCard);
+
+    main.appendChild(el("h2", { class: "kc-section-title" }, [document.createTextNode("Les 60 réponses")]));
+    var table = el("table");
+    var thead = el("thead", {}, [el("tr", {}, [
+      el("th", {}, [document.createTextNode("ID")]),
+      el("th", {}, [document.createTextNode("Saboteur")]),
+      el("th", {}, [document.createTextNode("Facette")]),
+      el("th", {}, [document.createTextNode("Affirmation")]),
+      el("th", {}, [document.createTextNode("Réponse")])
+    ])]);
+    table.appendChild(thead);
+
+    var tbody = el("tbody");
+    (t.responses || []).slice().sort(function(a, b){ return a.questionId - b.questionId; }).forEach(function(r){
+      var q = QUESTIONS_BY_ID[r.questionId] || {};
+      tbody.appendChild(el("tr", {}, [
+        el("td", {}, [document.createTextNode(String(r.questionId))]),
+        el("td", {}, [document.createTextNode(r.saboteur)]),
+        el("td", {}, [document.createTextNode(r.facette)]),
+        el("td", {}, [document.createTextNode(q.text || "—")]),
+        el("td", {}, [document.createTextNode(String(r.answer))])
+      ]));
+    });
+    table.appendChild(tbody);
+    main.appendChild(table);
+  }
+
+  function detailField(label, value){
+    return el("div", {}, [
+      el("span", {}, [document.createTextNode(label)]),
+      el("strong", {}, [document.createTextNode(value || "—")])
+    ]);
+  }
+
+  // ============================================================
+  // EXPORTS CSV
+  // ============================================================
+
+  function exportTestsCsv(){
+    var header = [
+      "Date", "Test ID", "Participant ID", "Prénom", "Email", "Pays", "Version",
+      "Sauveteuse Altruiste", "Persévérante Insatiable", "Serrurière de Fortune",
+      "Rebelle Intègre", "Prospère Saboteuse", "Dominant", "Secondaire"
+    ];
+
+    var rows = [header];
+    state.joinedTests.forEach(function(t){
+      var scores = t.scores || {};
+      var row = [
+        formatDate(t.createdAt),
+        t.testId,
+        t.participantId,
+        t.prenom,
+        t.email,
+        t.pays,
+        t.testVersion
+      ];
+      SABOTEUR_ORDER.forEach(function(name){ row.push(scores[name] !== undefined ? scores[name] : ""); });
+      row.push(t.dominant ? t.dominant.name : "");
+      row.push(t.secondaire ? t.secondaire.name : "");
+      rows.push(row);
+    });
+
+    downloadCsv("kifcash-tests.csv", rows);
+  }
+
+  function exportResponsesCsv(){
+    var header = ["Date test", "Test ID", "Participant ID", "Question ID", "Saboteur", "Facette", "Réponse"];
+    var rows = [header];
+
+    state.joinedTests.forEach(function(t){
+      (t.responses || []).forEach(function(r){
+        rows.push([
+          formatDate(t.createdAt),
+          t.testId,
+          t.participantId,
+          r.questionId,
+          r.saboteur,
+          r.facette,
+          r.answer
+        ]);
+      });
+    });
+
+    downloadCsv("kifcash-reponses.csv", rows);
+  }
+
+  // ============================================================
+  // ROUTER
+  // ============================================================
+
+  function render(){
+    if (state.view === "login") renderLogin();
+    else if (state.view === "list") renderList();
+    else if (state.view === "detail") renderDetail();
+    else {
+      document.getElementById("kc-main").innerHTML = '<div class="kc-loading">Chargement…</div>';
+    }
+  }
+
+  render();
+</script>
+</body>
+</html>
