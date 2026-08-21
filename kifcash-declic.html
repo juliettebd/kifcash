@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Déclic — Kif'Cash</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --kc-violet:#8D1E81;
+    --kc-rose:#E60F72;
+    --kc-navy:#123859;
+    --kc-white:#FFFFFF;
+    --kc-mist:#F5F5F2;
+    --kc-line: rgba(18,56,89,0.14);
+    --kc-line-soft: rgba(18,56,89,0.08);
+    --kc-gradient: linear-gradient(90deg, var(--kc-violet), var(--kc-rose));
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:var(--kc-white);
+    color:var(--kc-navy);
+    font-family:'Roboto', Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  h1,h2,h3,.kc-display{
+    font-family:'Mulish', Arial, sans-serif;
+    font-weight:800;
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+
+  .kc-app{ min-height:100vh; display:flex; flex-direction:column; }
+
+  /* ---------- HEADER ---------- */
+
+  .kc-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+    padding:22px 28px;
+    border-bottom:1px solid var(--kc-line-soft);
+  }
+
+  .kc-brand{
+    font-family:'Mulish', Arial, sans-serif;
+    font-weight:800;
+    font-size:1.05rem;
+    color:var(--kc-navy);
+    white-space:nowrap;
+  }
+
+  .kc-brand span{
+    background:var(--kc-gradient);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+
+  .kc-progress{ display:flex; align-items:center; gap:12px; flex:1; max-width:340px; }
+
+  .kc-progress-track{
+    position:relative; flex:1; height:4px;
+    background:var(--kc-line-soft); border-radius:2px; overflow:hidden;
+  }
+
+  .kc-progress-fill{
+    position:absolute; left:0; top:0; bottom:0; width:0%;
+    background:var(--kc-gradient); transition:width 0.35s ease;
+  }
+
+  .kc-progress-count{
+    font-family:'Mulish', Arial, sans-serif; font-weight:700; font-size:0.85rem;
+    color:var(--kc-navy); white-space:nowrap; font-variant-numeric:tabular-nums;
+  }
+
+  /* ---------- MAIN LAYOUT ---------- */
+
+  main{ flex:1; display:flex; justify-content:center; padding:48px 24px 96px; }
+
+  .kcd-screen{ width:100%; max-width:640px; }
+
+  .kcd-eyebrow{
+    font-family:'Mulish', Arial, sans-serif; font-weight:700; font-size:0.78rem;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--kc-rose); margin-bottom:14px;
+  }
+
+  .kcd-screen h1{ font-size:2rem; line-height:1.15; margin-bottom:18px; }
+  .kcd-screen h2{ font-size:1.4rem; line-height:1.2; margin-bottom:14px; }
+  .kcd-screen h3{ font-size:1.05rem; line-height:1.25; margin:22px 0 10px; color:var(--kc-navy); }
+
+  .kcd-screen p{ font-size:1.02rem; line-height:1.65; color:rgba(18,56,89,0.82); margin:0 0 14px; }
+  .kcd-screen p strong{ color:var(--kc-navy); }
+  .kcd-screen p em{ font-style:italic; color:rgba(18,56,89,0.6); font-size:0.92rem; }
+
+  .kcd-storage-note{
+    display:flex; gap:10px; padding:14px 16px; background:var(--kc-mist); border-radius:8px;
+    font-size:0.85rem; line-height:1.5; color:rgba(18,56,89,0.75); margin:22px 0 30px;
+  }
+
+  .kcd-situation-recall{
+    padding:14px 16px; background:var(--kc-mist); border-radius:8px;
+    font-size:0.95rem; line-height:1.5; color:var(--kc-navy); margin-bottom:22px;
+  }
+  .kcd-situation-recall strong{
+    display:block; font-family:'Mulish', Arial, sans-serif; font-weight:700; font-size:0.78rem;
+    text-transform:uppercase; letter-spacing:0.04em; color:var(--kc-rose); margin-bottom:6px;
+  }
+
+  /* ---------- FIELDS ---------- */
+
+  .kcd-field{ margin-bottom:20px; }
+  .kcd-field label{
+    display:block; font-family:'Mulish', Arial, sans-serif; font-weight:700; font-size:0.88rem;
+    margin-bottom:8px; color:var(--kc-navy);
+  }
+  .kcd-field textarea, .kcd-field input[type="text"], .kcd-field input[type="number"]{
+    width:100%; padding:13px 15px; border:1px solid var(--kc-line); border-radius:8px;
+    font-family:'Roboto', Arial, sans-serif; font-size:1rem; color:var(--kc-navy);
+    background:var(--kc-white); transition:border-color 0.2s ease;
+  }
+  .kcd-field textarea{ resize:vertical; min-height:64px; font-family:'Roboto', Arial, sans-serif; }
+  .kcd-field input:focus, .kcd-field textarea:focus{ outline:none; border-color:var(--kc-violet); }
+  .kcd-field-error{ display:none; font-size:0.8rem; color:var(--kc-rose); margin-top:6px; }
+  .kcd-field.kcd-invalid textarea, .kcd-field.kcd-invalid input{ border-color:var(--kc-rose); }
+  .kcd-field.kcd-invalid .kcd-field-error{ display:block; }
+
+  .kcd-inline-fields{ display:flex; gap:14px; }
+  .kcd-inline-fields .kcd-field{ flex:1; margin-bottom:0; }
+  .kcd-suffix{ font-size:0.8rem; color:rgba(18,56,89,0.55); margin-top:6px; }
+
+  select.kcd-select{
+    width:100%; padding:13px 15px; border:1px solid var(--kc-line); border-radius:8px;
+    font-family:'Roboto', Arial, sans-serif; font-size:1rem; color:var(--kc-navy); background:var(--kc-white);
+    appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23123859' d='M5.5 7.5l4.5 4.5 4.5-4.5z'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 14px center;
+  }
+
+  /* ---------- CHOICE ITEMS (radio ou checkbox) ---------- */
+
+  .kcd-choice-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:22px; }
+  .kcd-choice-item{
+    display:flex; align-items:center; gap:12px; padding:14px 16px; position:relative;
+    border:1px solid var(--kc-line); border-radius:8px; cursor:pointer;
+    transition:border-color 0.15s ease, background 0.15s ease;
+  }
+  .kcd-choice-item:hover{ border-color:var(--kc-violet); }
+  .kcd-choice-item.selected{ border-color:var(--kc-violet); background:rgba(141,30,129,0.05); }
+
+  /* Le vrai input reste fonctionnel (cliquable, accessible) mais invisible : */
+  /* c'est le pseudo-élément ci-dessous qui dessine le rond/carré, toujours parfaitement centré. */
+  .kcd-choice-item input{
+    position:absolute; opacity:0; width:0; height:0; margin:0; padding:0; pointer-events:none;
+  }
+  .kcd-choice-item::before{
+    content:"";
+    flex-shrink:0;
+    width:20px; height:20px;
+    box-sizing:border-box;
+    border:2px solid var(--kc-line);
+    background-color:var(--kc-white);
+    background-repeat:no-repeat;
+    background-position:center;
+    transition:border-color 0.15s ease, background-image 0.15s ease;
+  }
+  .kcd-choice-radio::before{ border-radius:50%; }
+  .kcd-choice-checkbox::before{ border-radius:5px; }
+  .kcd-choice-item.selected::before{
+    border-color:var(--kc-violet);
+    background-image:radial-gradient(circle, var(--kc-violet) 0%, var(--kc-violet) 42%, transparent 46%);
+  }
+
+  .kcd-choice-item span{ font-size:0.96rem; line-height:1.4; color:var(--kc-navy); }
+
+  .kcd-conditional-block{
+    margin-top:4px; margin-bottom:26px; padding:18px 18px 4px;
+    border-left:2px solid var(--kc-line); padding-left:18px;
+  }
+
+  /* ---------- BUTTONS ---------- */
+
+  .kc-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    font-family:'Mulish', Arial, sans-serif; font-weight:700; font-size:0.95rem;
+    border:none; border-radius:8px; padding:15px 30px; cursor:pointer;
+    line-height:1; text-align:center;
+    transition:transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  }
+  .kc-btn-primary{ background:var(--kc-gradient); color:var(--kc-white); }
+  .kc-btn-primary:hover:not(:disabled){ transform:translateY(-1px); box-shadow:0 6px 18px rgba(141,30,129,0.28); }
+  .kc-btn-primary:disabled{ opacity:0.38; cursor:not-allowed; transform:none; box-shadow:none; }
+  .kc-btn-secondary{ background:transparent; color:var(--kc-navy); border:1px solid var(--kc-line); }
+  .kc-btn-secondary:hover{ border-color:var(--kc-navy); }
+  .kc-btn-text{
+    background:none; border:none; color:rgba(18,56,89,0.6); font-family:'Roboto', Arial, sans-serif;
+    font-size:0.85rem; text-decoration:underline; cursor:pointer; padding:6px 0;
+  }
+
+  /* Espace systématique sous tout bouton autonome (hors ligne de navigation) suivi d'autre contenu */
+  .kcd-screen > .kc-btn,
+  .kcd-conditional-block > .kc-btn,
+  .kcd-standalone-btn{
+    display:inline-block;
+    margin:6px 0 28px;
+  }
+
+  .kcd-nav{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:8px; flex-wrap:wrap; }
+  .kcd-nav-spacer{ flex:1; }
+  .kcd-nav .kc-btn{ margin:0; }
+
+  /* Suppression des flèches de sélecteur sur les champs numériques */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+  input[type="number"]{
+    -moz-appearance:textfield;
+    -webkit-appearance:none;
+    appearance:textfield;
+  }
+
+  /* Bouton PDF proéminent */
+  .kcd-pdf-btn{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    width:100%; padding:18px 20px; margin:14px 0 16px;
+    background:var(--kc-white); border:2px solid var(--kc-violet); border-radius:10px;
+    font-family:'Mulish', Arial, sans-serif; font-weight:800; font-size:1rem; color:var(--kc-violet);
+    cursor:pointer; transition:background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .kcd-pdf-btn:hover{ background:rgba(141,30,129,0.06); transform:translateY(-1px); box-shadow:0 6px 18px rgba(141,30,129,0.16); }
+  .kcd-pdf-btn svg{ flex-shrink:0; }
+  .kcd-pdf-caption{ text-align:center; font-size:0.82rem; color:rgba(18,56,89,0.55); margin:6px 0 34px; }
+
+  /* ---------- RESUME SCREEN ---------- */
+
+  .kcd-resume-card{ text-align:center; padding:44px 28px; }
+  .kcd-resume-card h1{ font-size:1.6rem; margin-bottom:14px; }
+  .kcd-resume-actions{ display:flex; flex-direction:column; gap:12px; margin-top:26px; }
+
+  /* ---------- SUMMARY (Mon Déclic) ---------- */
+
+  .kcd-summary-block{
+    background:var(--kc-mist); border-radius:12px; padding:20px 20px; margin-bottom:18px;
+  }
+  .kcd-summary-label{
+    font-family:'Mulish', Arial, sans-serif; font-weight:700; font-size:0.78rem;
+    text-transform:uppercase; letter-spacing:0.04em; color:rgba(18,56,89,0.6); margin-bottom:8px;
+  }
+  .kcd-summary-value{
+    font-family:'Mulish', Arial, sans-serif; font-weight:800; font-size:1.4rem; color:var(--kc-navy);
+  }
+  .kcd-summary-value.kcd-accent{
+    background:var(--kc-gradient); -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .kcd-summary-sub{ font-size:0.88rem; color:rgba(18,56,89,0.65); margin-top:6px; line-height:1.4; }
+
+  .kcd-domain-block{ margin-bottom:16px; }
+  .kcd-domain-title{
+    font-family:'Mulish', Arial, sans-serif; font-weight:700; font-size:0.95rem; color:var(--kc-violet); margin-bottom:8px;
+  }
+  .kcd-domain-list{ margin:0; padding-left:20px; }
+  .kcd-domain-list li{ font-size:0.92rem; line-height:1.55; color:rgba(18,56,89,0.82); margin-bottom:4px; }
+
+  .kcd-declic-echo{
+    text-align:center; padding:26px 10px; margin:26px 0 24px;
+    border-top:1px solid var(--kc-line-soft); border-bottom:1px solid var(--kc-line-soft);
+  }
+  .kcd-declic-echo h2{ font-size:1.5rem; }
+
+  /* ---------- REASSURANCE / CTA ---------- */
+
+  .kcd-cta-box{
+    background:var(--kc-navy); border-radius:14px; padding:32px 28px; color:var(--kc-white); margin:8px 0 24px;
+  }
+  .kcd-cta-box h2{ color:var(--kc-white); font-size:1.5rem; margin-bottom:14px; }
+  .kcd-cta-box p{ color:rgba(255,255,255,0.85); margin-bottom:20px; }
+  .kcd-cta-box .kc-btn-primary{ display:inline-block; text-decoration:none; }
+
+  .kcd-restart-block{ text-align:center; margin-top:22px; }
+
+  @media (max-width: 560px){
+    .kc-header{ padding:16px 18px; flex-wrap:wrap; }
+    .kc-progress{ order:3; max-width:none; width:100%; }
+    main{ padding:32px 16px 80px; }
+    .kcd-screen h1{ font-size:1.6rem; }
+    .kcd-inline-fields{ flex-direction:column; gap:20px; }
+  }
+</style>
+</head>
+<body>
+<div class="kc-app">
+  <header class="kc-header">
+    <div class="kc-brand">Kif'<span>Cash</span></div>
+    <div class="kc-progress" id="kcd-progress" hidden>
+      <div class="kc-progress-track"><div class="kc-progress-fill" id="kcd-progress-fill"></div></div>
+      <span class="kc-progress-count" id="kcd-progress-count">0 / 0</span>
+    </div>
+  </header>
+  <main id="kcd-main"></main>
+</div>
+
+<script>
+(function(){
+
+  // ============================================================
+  // CONFIGURATION
+  // ============================================================
+
+  var STORAGE_KEY = "kifcash_declic_v2";
+  var EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
+
+  var SCREENS = ["situation", "money", "time", "mentalload", "saboteurs", "summary", "reassurance", "cta"];
+  // "intro" est hors tableau, écran 0 avant le parcours principal
+
+  var SABOTEURS = [
+    "Sauveteuse Altruiste",
+    "Persévérante Insatiable",
+    "Serrurière de Fortune",
+    "Rebelle Intègre",
+    "Prospère Saboteuse"
+  ];
+  var UNKNOWN_LABEL = "Je ne sais pas";
+
+  var FREQUENCIES = [
+    { key: "1x_an",       label: "1 fois par an",             coef: 1 },
+    { key: "2_3x_an",      label: "2 à 3 fois par an",          coef: 2.5 },
+    { key: "2_3_mois",     label: "Tous les 2 à 3 mois",        coef: 5 },
+    { key: "1x_mois",      label: "Environ 1 fois par mois",    coef: 12 },
+    { key: "2_3x_mois",    label: "2 à 3 fois par mois",        coef: 30 },
+    { key: "1x_semaine",   label: "Environ 1 fois par semaine", coef: 52 },
+    { key: "2_3x_semaine", label: "2 à 3 fois par semaine",     coef: 130 }
+  ];
+
+  var MONEY_TIME_ANSWERS_MONEY = [
+    { key: "estimable", label: "Oui, et je peux l'estimer" },
+    { key: "hard",       label: "Oui, mais difficile à chiffrer" },
+    { key: "no",         label: "Non / pas directement" },
+    { key: "unknown",    label: "Je ne sais pas" }
+  ];
+
+  var MONEY_TIME_ANSWERS_TIME = [
+    { key: "estimable", label: "Oui, et je peux l'estimer" },
+    { key: "hard",       label: "Oui, mais difficile à chiffrer" },
+    { key: "no",         label: "Non / pas vraiment" },
+    { key: "unknown",    label: "Je ne sais pas" }
+  ];
+
+  // Intro affichée au-dessus des champs chiffrés selon la réponse donnée
+  var ESTIMATE_INTRO_TEXT = {
+    estimable: null,
+    hard: "Même si le montant exact est difficile à connaître, donnez une estimation approximative.",
+    unknown: "Vous ne savez pas avec certitude. Mais si vous deviez avancer un chiffre, même approximatif, lequel donneriez-vous ? Ce n'est pas grave si ce n'est pas vérifiable."
+  };
+
+  var MENTAL_LOAD_OPTIONS = [
+    "Aucune",
+    "Ça me traverse parfois l'esprit",
+    "J'y pense régulièrement",
+    "Ça me prend beaucoup de place",
+    "C'est constamment dans un coin de ma tête",
+    "Je n'en dors plus"
+  ];
+
+  // Conséquences : clé, libellé, domaine
+  var CONSEQUENCES = [
+    { key: "c1",  label: "Je rumine ou j'y pense même quand je voudrais décrocher", domain: "perso" },
+    { key: "c2",  label: "J'ai plus de mal à me concentrer sur autre chose", domain: "pro" },
+    { key: "c3",  label: "Je repousse certaines décisions", domain: "pro" },
+    { key: "c4",  label: "J'ai plus de mal à prendre des décisions simples", domain: "pro" },
+    { key: "c5",  label: "Je surveille davantage mes comptes, mes ventes ou mes dépenses", domain: "pro" },
+    { key: "c6",  label: "Je travaille plus ou plus longtemps pour compenser", domain: "pro" },
+    { key: "c7",  label: "Je reporte du repos, des loisirs ou du temps personnel", domain: "perso" },
+    { key: "c8",  label: "Mon sommeil est moins bon", domain: "sante" },
+    { key: "c9",  label: "Je me sens plus tendue ou stressée", domain: "sante" },
+    { key: "c10", label: "Je me sens plus fatiguée", domain: "sante" },
+    { key: "c11", label: "J'ai davantage de tensions physiques, de maux de tête ou le ventre noué", domain: "sante" },
+    { key: "c12", label: "Je culpabilise ou je m'en veux", domain: "confiance" },
+    { key: "c13", label: "Je doute plus facilement de moi ou de mes capacités", domain: "confiance" },
+    { key: "c14", label: "J'ai tendance à me décourager ou à laisser tomber certaines choses", domain: "confiance" },
+    { key: "c15", label: "J'évite certaines conversations liées à l'argent", domain: "relations" },
+    { key: "c16", label: "Cela crée des tensions dans ma vie personnelle ou familiale", domain: "perso" },
+    { key: "c17", label: "Cela crée des tensions dans certaines de mes relations", domain: "relations" },
+    { key: "c18", label: "J'évite certaines sorties, dépenses ou activités", domain: "relations" },
+    { key: "c19", label: "Je me compare plus souvent aux autres", domain: "relations" },
+    { key: "c20", label: "J'essaie de donner le change ou de cacher la situation", domain: "relations" },
+    { key: "c21", label: "Je me sens moins disponible ou plus irritable avec les autres", domain: "perso" },
+    { key: "c22", label: "Je compense parfois avec des achats, de la nourriture, de l'alcool ou autre chose", domain: "sante" },
+    { key: "c23", label: "Cette situation me pousse parfois à prendre des décisions que je regrette ensuite", domain: "pro" }
+  ];
+  var CONSEQUENCE_OTHER_KEY = "autre";
+  var CONSEQUENCE_NONE_KEY = "rien";
+
+  var DOMAINS = [
+    { key: "sante",     label: "Votre santé" },
+    { key: "pro",        label: "Votre vie professionnelle" },
+    { key: "perso",      label: "Votre vie personnelle ou familiale" },
+    { key: "relations",  label: "Vos relations" },
+    { key: "confiance",  label: "Votre confiance en vous" }
+  ];
+
+  var CTA_CONFIG = {
+    title: "Vous avez eu le Déclic. Maintenant, vous pouvez aller plus loin.",
+    text: "Le Déclic vous a permis d'observer une situation, de mesurer ce qu'elle vous coûte et de voir jusqu'où ses conséquences peuvent déborder. Vous avez aussi commencé à repérer les Saboteurs Financiers qui pourraient intervenir. Kif'Cash, Déjouez vos Saboteurs Financiers vous accompagne pour repérer les mécanismes qui se reproduisent dans votre réalité, intervenir là où ils vous coûtent et les déjouer durablement.",
+    buttonLabel: "Poursuivre avec Kif'Cash",
+    url: "https://www.chenillepapillon.be/kifcash"
+  };
+
+  var DECLIC_URL = "https://www.chenillepapillon.be/saboteurs-financiers-declic";
+
+  function freqByKey(key){
+    for (var i = 0; i < FREQUENCIES.length; i++){ if (FREQUENCIES[i].key === key) return FREQUENCIES[i]; }
+    return null;
+  }
+  function consequenceByKey(key){
+    for (var i = 0; i < CONSEQUENCES.length; i++){ if (CONSEQUENCES[i].key === key) return CONSEQUENCES[i]; }
+    return null;
+  }
+  function domainByKey(key){
+    for (var i = 0; i < DOMAINS.length; i++){ if (DOMAINS[i].key === key) return DOMAINS[i]; }
+    return null;
+  }
+
+  // ============================================================
+  // ÉTAT ET STOCKAGE LOCAL
+  // ============================================================
+
+  function emptyState(){
+    return {
+      version: "2026.2",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      screenIndex: 0, // 0 = intro, 1..8 = SCREENS[0..7]
+      situation: { text: "", controlConfirmed: null },
+      money: { answer: null, amount: null, frequency: null, annualAmount: null },
+      time: { answer: null, hours: null, minutes: null, frequency: null, annualMinutes: null },
+      timeValue: { personalValue: null, hourlyRate: null, hourlyRateUnknown: false, annualLow: null, annualHigh: null },
+      mentalLoad: null,
+      consequences: { selected: [], other: "" },
+      saboteurs: []
+    };
+  }
+
+  var state = null;
+
+  function saveState(){
+    state.updatedAt = Date.now();
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  function clearDeclicData(){
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    state = emptyState();
+  }
+
+  function loadSavedState(){
+    var raw = null;
+    try{ raw = localStorage.getItem(STORAGE_KEY); }catch(e){ return null; }
+    if (!raw) return null;
+    var parsed = null;
+    try{ parsed = JSON.parse(raw); }catch(e){
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(e2){}
+      return null;
+    }
+    if (!parsed || !parsed.createdAt || !parsed.situation || !parsed.money || !parsed.time){
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(e2){}
+      return null;
+    }
+    if (Date.now() - parsed.createdAt > EXPIRATION_MS){
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(e2){}
+      return null;
+    }
+    return parsed;
+  }
+
+  // ============================================================
+  // OUTILS DOM
+  // ============================================================
+
+  function el(tag, attrs, children){
+    var node = document.createElement(tag);
+    attrs = attrs || {};
+    for (var key in attrs){
+      if (!attrs.hasOwnProperty(key)) continue;
+      if (key === "class") node.className = attrs[key];
+      else if (key === "html") node.innerHTML = attrs[key];
+      else node.setAttribute(key, attrs[key]);
+    }
+    (children || []).forEach(function(child){ if (child) node.appendChild(child); });
+    return node;
+  }
+  function txt(str){ return document.createTextNode(str); }
+
+  function formatEuros(n){
+    n = Math.round(n || 0);
+    return n.toLocaleString("fr-FR") + " €";
+  }
+
+  // Affichage courte durée : "45 min", "18 h", "18 h 30"
+  function formatDuration(decimalHours){
+    decimalHours = decimalHours || 0;
+    var totalMinutes = Math.round(decimalHours * 60);
+    var h = Math.floor(totalMinutes / 60);
+    var m = totalMinutes % 60;
+    if (h <= 0) return m + " min";
+    if (m === 0) return h + " h";
+    return h + " h " + m;
+  }
+
+  // Affichage durée annuelle : "104 heures / an"
+  function formatAnnualDuration(totalMinutes){
+    var hours = Math.round((totalMinutes || 0) / 60);
+    return hours.toLocaleString("fr-FR") + " heures / an";
+  }
+
+  // ============================================================
+  // CALCULS
+  // ============================================================
+
+  function computeTimeValueRange(){
+    var annualMinutes = state.time.annualMinutes;
+    if (!annualMinutes) return { low: null, high: null };
+    var annualHours = annualMinutes / 60;
+    var values = [];
+    if (state.timeValue.personalValue) values.push(state.timeValue.personalValue);
+    if (!state.timeValue.hourlyRateUnknown && state.timeValue.hourlyRate) values.push(state.timeValue.hourlyRate);
+    if (values.length === 0) return { low: null, high: null };
+    var min = Math.min.apply(null, values);
+    var max = Math.max.apply(null, values);
+    return { low: Math.round(min * annualHours), high: Math.round(max * annualHours) };
+  }
+
+  function groupedDomains(){
+    var groups = {};
+    state.consequences.selected.forEach(function(key){
+      var c = consequenceByKey(key);
+      if (!c) return;
+      if (!groups[c.domain]) groups[c.domain] = [];
+      groups[c.domain].push(c.label);
+    });
+    var result = [];
+    DOMAINS.forEach(function(d){
+      if (groups[d.key] && groups[d.key].length){
+        result.push({ label: d.label, items: groups[d.key] });
+      }
+    });
+    return result;
+  }
+
+  // ============================================================
+  // NAVIGATION
+  // ============================================================
+
+  function updateProgress(){
+    var bar = document.getElementById("kcd-progress");
+    var fill = document.getElementById("kcd-progress-fill");
+    var count = document.getElementById("kcd-progress-count");
+    if (state.screenIndex <= 0){ bar.hidden = true; return; }
+    bar.hidden = false;
+    var idx = state.screenIndex; // 1..8
+    var pct = (idx / SCREENS.length) * 100;
+    fill.style.width = pct + "%";
+    count.textContent = idx + " / " + SCREENS.length;
+  }
+
+  function currentScreenId(){
+    if (state.screenIndex <= 0) return "intro";
+    return SCREENS[state.screenIndex - 1];
+  }
+
+  function goToIndex(index){ state.screenIndex = index; saveState(); render(); }
+  function next(){ if (state.screenIndex < SCREENS.length) goToIndex(state.screenIndex + 1); }
+  function prev(){ if (state.screenIndex > 0) goToIndex(state.screenIndex - 1); }
+
+  // ============================================================
+  // COMPOSANTS PARTAGÉS
+  // ============================================================
+
+  function navRow(opts){
+    var row = el("div", { class: "kcd-nav" });
+    if (opts.showPrev){
+      var prevBtn = el("button", { class: "kc-btn kc-btn-secondary", type: "button" }, [txt("Précédent")]);
+      prevBtn.addEventListener("click", opts.onPrev);
+      row.appendChild(prevBtn);
+    }
+    row.appendChild(el("div", { class: "kcd-nav-spacer" }));
+    if (opts.onNext){
+      var nextBtn = el("button", { class: "kc-btn kc-btn-primary", type: "button" }, [txt(opts.nextLabel || "Suivant")]);
+      nextBtn.addEventListener("click", opts.onNext);
+      row.appendChild(nextBtn);
+    }
+    return row;
+  }
+
+  function storageNote(){
+    return el("div", { class: "kcd-storage-note" }, [
+      txt("Vos réponses restent uniquement sur cet appareil et ce navigateur. Elles ne nous sont pas transmises et seront automatiquement supprimées après 7 jours.")
+    ]);
+  }
+
+  function situationRecall(){
+    return el("div", { class: "kcd-situation-recall" }, [
+      el("strong", {}, [txt("Vous avez choisi")]),
+      txt("« " + (state.situation.text || "") + " »")
+    ]);
+  }
+
+  // Construit un item radio/checkbox générique
+  function choiceItem(opts){
+    // opts: { type: "radio"|"checkbox", name, value, label, checked, onChange }
+    var input = el("input", { type: opts.type, name: opts.name || "" });
+    input.checked = !!opts.checked;
+    var modifier = opts.type === "checkbox" ? "kcd-choice-checkbox" : "kcd-choice-radio";
+    var item = el("label", { class: "kcd-choice-item " + modifier + (opts.checked ? " selected" : "") }, [
+      input, el("span", {}, [txt(opts.label)])
+    ]);
+    input.addEventListener("change", function(){ opts.onChange(input); });
+    return { item: item, input: input };
+  }
+
+  // ============================================================
+  // ÉCRAN — REPRISE
+  // ============================================================
+
+  function renderResume(main){
+    var card = el("div", { class: "kcd-screen kcd-resume-card" });
+    card.appendChild(el("h1", {}, [txt("Vous avez un Déclic en cours.")]));
+    card.appendChild(el("p", {}, [txt("Vos réponses sont encore disponibles sur cet appareil.")]));
+    var actions = el("div", { class: "kcd-resume-actions" });
+    var resumeBtn = el("button", { class: "kc-btn kc-btn-primary", type: "button" }, [txt("Reprendre")]);
+    resumeBtn.addEventListener("click", function(){ resumeMode = false; render(); });
+    var restartBtn = el("button", { class: "kc-btn kc-btn-secondary", type: "button" }, [txt("Recommencer")]);
+    restartBtn.addEventListener("click", function(){ clearDeclicData(); resumeMode = false; saveState(); render(); });
+    actions.appendChild(resumeBtn);
+    actions.appendChild(restartBtn);
+    card.appendChild(actions);
+    main.appendChild(card);
+  }
+
+  // ============================================================
+  // ÉCRAN 1 — INTRO
+  // ============================================================
+
+  function renderIntro(main){
+    var screen = el("div", { class: "kcd-screen" });
+    screen.appendChild(el("div", { class: "kcd-eyebrow" }, [txt("Kif'Cash")]));
+    screen.appendChild(el("h1", {}, [txt("Le Déclic Kif'Cash")]));
+    [
+      "Vous connaissez maintenant vos Saboteurs Financiers.",
+      "Mais connaître leur nom ne suffit pas. Ce qui devient intéressant, c'est d'observer ce que certains de vos comportements produisent concrètement dans votre business.",
+      "Le Déclic vous propose de partir d'une situation liée à l'argent qui vous pèse vraiment aujourd'hui et de regarder ce qu'elle entraîne.",
+      "Pas seulement en argent."
+    ].forEach(function(p){ screen.appendChild(el("p", {}, [txt(p)])); });
+    screen.appendChild(storageNote());
+    var startBtn = el("button", { class: "kc-btn kc-btn-primary", type: "button" }, [txt("Commencer mon Déclic")]);
+    startBtn.addEventListener("click", next);
+    screen.appendChild(startBtn);
+    main.appendChild(screen);
+  }
+
+  // ============================================================
+  // ÉCRAN 2 — SITUATION
+  // ============================================================
+
+  function renderSituation(main){
+    var screen = el("div", { class: "kcd-screen" });
+    screen.appendChild(el("h2", {}, [txt("Quelle situation vous plombe le plus aujourd'hui ?")]));
+    screen.appendChild(el("p", {}, [txt("Choisissez une situation liée à l'argent dans votre business sur laquelle vous avez une prise directe.")]));
+    screen.appendChild(el("p", {}, [txt("Elle doit concerner quelque chose que vous faites, ne faites pas, décidez, repoussez, acceptez ou répétez.")]));
+    screen.appendChild(el("p", {}, [txt("Évitez les situations qui dépendent principalement d'une autre personne, du marché, de la conjoncture ou d'une décision extérieure.")]));
+    screen.appendChild(el("p", {}, [txt("Décrivez simplement ce qui se passe, en quelques mots.")]));
+
+    var field = el("div", { class: "kcd-field" });
+    field.appendChild(el("label", {}, [txt("Ma situation")]));
+    var textarea = el("textarea", { rows: "3" });
+    textarea.value = state.situation.text || "";
+    field.appendChild(textarea);
+    field.appendChild(el("div", { class: "kcd-field-error" }, [txt("Décrivez votre situation pour continuer.")]));
+    screen.appendChild(field);
+
+    screen.appendChild(el("h3", {}, [txt("Bon repère")]));
+    screen.appendChild(el("p", {}, [txt("Si elle change uniquement parce que quelqu'un d'autre agit différemment, elle n'est probablement pas dans votre zone de contrôle.")]));
+
+    var qField = el("div", { class: "kcd-field" });
+    qField.appendChild(el("label", {}, [txt("Pouvez-vous identifier quelque chose que vous faites, évitez ou décidez vous-même dans cette situation ?")]));
+    var choiceList = el("div", { class: "kcd-choice-list" });
+    var control = state.situation.controlConfirmed;
+    var yesChoice = choiceItem({ type: "radio", name: "control", value: "yes", label: "Oui", checked: control === true,
+      onChange: function(){ control = true; refreshWarning(); } });
+    var noChoice = choiceItem({ type: "radio", name: "control", value: "no", label: "Pas vraiment", checked: control === false,
+      onChange: function(){ control = false; refreshWarning(); } });
+    yesChoice.input.addEventListener("change", function(){ yesChoice.item.classList.add("selected"); noChoice.item.classList.remove("selected"); });
+    noChoice.input.addEventListener("change", function(){ noChoice.item.classList.add("selected"); yesChoice.item.classList.remove("selected"); });
+    choiceList.appendChild(yesChoice.item);
+    choiceList.appendChild(noChoice.item);
+    qField.appendChild(choiceList);
+    screen.appendChild(qField);
+
+    var warningBlock = el("div", { class: "kcd-conditional-block", style: "display:none;" });
+    warningBlock.appendChild(el("p", {}, [txt("Cette situation vous affecte peut-être beaucoup, mais elle dépend principalement de quelque chose que vous ne contrôlez pas directement.")]));
+    warningBlock.appendChild(el("p", {}, [txt("Pour Le Déclic, choisissez-en une dans laquelle votre propre façon d'agir, de décider ou de réagir peut changer quelque chose.")]));
+    var retryBtn = el("button", { class: "kc-btn kc-btn-secondary", type: "button" }, [txt("Choisir une autre situation")]);
+    retryBtn.addEventListener("click", function(){
+      control = null;
+      yesChoice.input.checked = false; noChoice.input.checked = false;
+      yesChoice.item.classList.remove("selected"); noChoice.item.classList.remove("selected");
+      warningBlock.style.display = "none";
+      textarea.focus();
+    });
+    warningBlock.appendChild(retryBtn);
+    screen.appendChild(warningBlock);
+
+    function refreshWarning(){
+      warningBlock.style.display = control === false ? "block" : "none";
+    }
+    refreshWarning();
+
+    screen.appendChild(navRow({
+      showPrev: false,
+      onNext: function(){
+        var value = textarea.value.trim();
+        var valid = true;
+        if (!value){ field.classList.add("kcd-invalid"); valid = false; } else { field.classList.remove("kcd-invalid"); }
+        if (control !== true){ valid = false; }
+        if (!valid) return;
+        state.situation.text = value;
+        state.situation.controlConfirmed = true;
+        saveState();
+        next();
+      }
+    }));
+
+    main.appendChild(screen);
+  }
+
+  // ============================================================
+  // ÉCRAN 3 — ARGENT
+  // ============================================================
+
+  function renderMoney(main){
+    var screen = el("div", { class: "kcd-screen" });
+    screen.appendChild(el("h2", {}, [txt("Regardons d'abord l'argent")]));
+    screen.appendChild(situationRecall());
+    screen.appendChild(el("p", {}, [txt("Un impact financier ne correspond pas uniquement à de l'argent dépensé.")]));
+    screen.appendChild(el("p", {}, [txt("Il peut aussi s'agir d'argent perdu, non gagné ou immobilisé.")]));
+
+    var qField = el("div", { class: "kcd-field" });
+    qField.appendChild(el("label", {}, [txt("Cette situation vous coûte-t-elle directement de l'argent ?")]));
+    var choiceList = el("div", { class: "kcd-choice-list" });
+    qField.appendChild(choiceList);
+    screen.appendChild(qField);
+
+    var conditionalBlock = el("div", { class: "kcd-conditional-block", style: "display:none;" });
+    var introText = el("p", { style: "margin-top:0;" });
+    conditionalBlock.appendChild(introText);
+
+    var fieldAmount = el("div", { class: "kcd-field" });
+    fieldAmount.appendChild(el("label", {}, [txt("Environ combien à chaque fois ?")]));
+    var inputAmount = el("input", { type: "number", min: "0", step: "1" });
+    if (state.money.amount !== null && state.money.amount !== undefined) inputAmount.value = state.money.amount;
+    fieldAmount.appendChild(inputAmount);
+    fieldAmount.appendChild(el("div", { class: "kcd-suffix" }, [txt("€. Une estimation suffit.")]));
+    conditionalBlock.appendChild(fieldAmount);
+
+    var fieldFreq = el("div", { class: "kcd-field" });
+    fieldFreq.appendChild(el("label", {}, [txt("À quelle fréquence environ ?")]));
+    var select = el("select", { class: "kcd-select" });
+    select.appendChild(el("option", { value: "" }, [txt("Choisissez une fréquence")]));
+    FREQUENCIES.forEach(function(f){
+      var opt = el("option", { value: f.key }, [txt(f.label)]);
+      if (state.money.frequency === f.key) opt.selected = true;
+      select.appendChild(opt);
+    });
+    fieldFreq.appendChild(select);
+    fieldFreq.appendChild(el("div", { class: "kcd-field-error" }, [txt("Choisissez une fréquence pour continuer.")]));
+    conditionalBlock.appendChild(fieldFreq);
+    screen.appendChild(conditionalBlock);
+
+    var currentAnswer = state.money.answer;
+    var itemsRefs = [];
+
+    function refreshVisibility(){
+      var showFields = currentAnswer === "estimable" || currentAnswer === "hard" || currentAnswer === "unknown";
+      conditionalBlock.style.display = showFields ? "block" : "none";
+      introText.style.display = ESTIMATE_INTRO_TEXT[currentAnswer] ? "block" : "none";
+      introText.textContent = ESTIMATE_INTRO_TEXT[currentAnswer] || "";
+      itemsRefs.forEach(function(ref){ ref.item.classList.toggle("selected", ref.value === currentAnswer); });
+    }
+
+    MONEY_TIME_ANSWERS_MONEY.forEach(function(opt){
+      var c = choiceItem({
+        type: "radio", name: "money-answer", value: opt.key, label: opt.label, checked: state.money.answer === opt.key,
+        onChange: function(){
+          currentAnswer = opt.key;
+          if (currentAnswer === "no"){
+            // Nettoyage immédiat : ce cas n'a plus de champs chiffrés associés
+            state.money.amount = null;
+            state.money.frequency = null;
+            state.money.annualAmount = null;
+            inputAmount.value = "";
+            select.value = "";
+          }
+          state.money.answer = currentAnswer;
+          saveState();
+          refreshVisibility();
+        }
+      });
+      itemsRefs.push({ item: c.item, value: opt.key });
+      choiceList.appendChild(c.item);
+    });
+    refreshVisibility();
+
+    screen.appendChild(navRow({
+      showPrev: true,
+      onPrev: prev,
+      onNext: function(){
+        if (!currentAnswer) return;
+        var required = (currentAnswer === "estimable" || currentAnswer === "hard");
+        var amountRaw = inputAmount.value;
+        var freqKey = select.value;
+        var providingValue = amountRaw !== "" || freqKey !== "";
+
+        if (required || providingValue){
+          var amount = amountRaw === "" ? null : parseFloat(amountRaw);
+          var valid = true;
+          if (amount === null || amount < 0){ fieldAmount.classList.add("kcd-invalid"); valid = false; } else { fieldAmount.classList.remove("kcd-invalid"); }
+          if (!freqKey){ fieldFreq.classList.add("kcd-invalid"); valid = false; } else { fieldFreq.classList.remove("kcd-invalid"); }
+          if (!valid) return;
+          var freq = freqByKey(freqKey);
+          state.money.amount = amount;
+          state.money.frequency = freqKey;
+          state.money.annualAmount = amount * freq.coef;
+        } else {
+          fieldAmount.classList.remove("kcd-invalid");
+          fieldFreq.classList.remove("kcd-invalid");
+          state.money.amount = null;
+          state.money.frequency = null;
+          state.money.annualAmount = null;
+        }
+        saveState();
+        next();
+      }
+    }));
+
+    main.appendChild(screen);
+  }
+
+  // ============================================================
+  // ÉCRAN 4 — TEMPS + VALEUR DU TEMPS
+  // ============================================================
+
+  function renderTime(main){
+    var screen = el("div", { class: "kcd-screen" });
+    screen.appendChild(el("h2", {}, [txt("Et votre temps ?")]));
+    screen.appendChild(situationRecall());
+
+    var qField = el("div", { class: "kcd-field" });
+    qField.appendChild(el("label", {}, [txt("Cette situation vous prend-elle ou vous fait-elle perdre du temps ?")]));
+    var choiceList = el("div", { class: "kcd-choice-list" });
+    qField.appendChild(choiceList);
+    screen.appendChild(qField);
+
+    var conditionalBlock = el("div", { class: "kcd-conditional-block", style: "display:none;" });
+    var introText = el("p", { style: "margin-top:0;" });
+    conditionalBlock.appendChild(introText);
+    var timeLabel = el("div", { class: "kcd-field" });
+    timeLabel.appendChild(el("label", {}, [txt("Environ combien à chaque fois ?")]));
+    var inline = el("div", { class: "kcd-inline-fields" });
+    var fH = el("div", {});
+    var inputH = el("input", { type: "number", min: "0", step: "1" });
+    if (state.time.hours !== null && state.time.hours !== undefined) inputH.value = state.time.hours;
+    fH.appendChild(inputH);
+    fH.appendChild(el("div", { class: "kcd-suffix" }, [txt("heures")]));
+    var fM = el("div", {});
+    var inputM = el("input", { type: "number", min: "0", max: "59", step: "1" });
+    if (state.time.minutes !== null && state.time.minutes !== undefined) inputM.value = state.time.minutes;
+    fM.appendChild(inputM);
+    fM.appendChild(el("div", { class: "kcd-suffix" }, [txt("minutes")]));
+    inline.appendChild(fH); inline.appendChild(fM);
+    timeLabel.appendChild(inline);
+    timeLabel.appendChild(el("div", { class: "kcd-suffix" }, [txt("Une estimation suffit.")]));
+    conditionalBlock.appendChild(timeLabel);
+
+    var fieldFreq = el("div", { class: "kcd-field" });
+    fieldFreq.appendChild(el("label", {}, [txt("À quelle fréquence environ ?")]));
+    var select = el("select", { class: "kcd-select" });
+    select.appendChild(el("option", { value: "" }, [txt("Choisissez une fréquence")]));
+    FREQUENCIES.forEach(function(f){
+      var opt = el("option", { value: f.key }, [txt(f.label)]);
+      if (state.time.frequency === f.key) opt.selected = true;
+      select.appendChild(opt);
+    });
+    fieldFreq.appendChild(select);
+    fieldFreq.appendChild(el("div", { class: "kcd-field-error" }, [txt("Choisissez une fréquence pour continuer.")]));
+    conditionalBlock.appendChild(fieldFreq);
+    screen.appendChild(conditionalBlock);
+
+    var currentAnswer = state.time.answer;
+    var itemsRefs = [];
+
+    function refreshVisibility(){
+      var showFields = currentAnswer === "estimable" || currentAnswer === "hard" || currentAnswer === "unknown";
+      conditionalBlock.style.display = showFields ? "block" : "none";
+      introText.style.display = ESTIMATE_INTRO_TEXT[currentAnswer] ? "block" : "none";
+      introText.textContent = ESTIMATE_INTRO_TEXT[currentAnswer] || "";
+      itemsRefs.forEach(function(ref){ ref.item.classList.toggle("selected", ref.value === currentAnswer); });
+    }
+
+    MONEY_TIME_ANSWERS_TIME.forEach(function(opt){
+      var c = choiceItem({
+        type: "radio", name: "time-answer", value: opt.key, label: opt.label, checked: state.time.answer === opt.key,
+        onChange: function(){
+          currentAnswer = opt.key;
+          if (currentAnswer === "no"){
+            state.time.hours = null;
+            state.time.minutes = null;
+            state.time.frequency = null;
+            state.time.annualMinutes = null;
+            inputH.value = ""; inputM.value = ""; select.value = "";
+          }
+          state.time.answer = currentAnswer;
+          saveState();
+          refreshVisibility();
+        }
+      });
+      itemsRefs.push({ item: c.item, value: opt.key });
+      choiceList.appendChild(c.item);
+    });
+    refreshVisibility();
+
+    // ---------- Valeur du temps (même écran) ----------
+    screen.appendChild(el("h3", {}, [txt("Et une heure de votre temps, elle vaut combien ?")]));
+    screen.appendChild(el("p", {}, [txt("Un tarif horaire donne un repère. La valeur que nous accordons réellement à une heure de notre vie en donne un autre.")]));
+    screen.appendChild(el("p", {}, [txt("Imaginez qu'on vous demande de consacrer une heure entière à quelque chose qui ne vous apporte absolument rien.")]));
+    screen.appendChild(el("p", {}, [txt("Vous ne pouvez ni travailler, ni lire, ni avancer sur autre chose.")]));
+
+    var fieldPersonal = el("div", { class: "kcd-field" });
+    fieldPersonal.appendChild(el("label", {}, [txt("À partir de quelle somme accepteriez-vous de donner cette heure ?")]));
+    var inputPersonal = el("input", { type: "number", min: "0", step: "1" });
+    if (state.timeValue.personalValue) inputPersonal.value = state.timeValue.personalValue;
+    fieldPersonal.appendChild(inputPersonal);
+    fieldPersonal.appendChild(el("div", { class: "kcd-suffix" }, [txt("€")]));
+    fieldPersonal.appendChild(el("div", { class: "kcd-field-error" }, [txt("Ce champ est nécessaire pour continuer.")]));
+    screen.appendChild(fieldPersonal);
+
+    var fieldHourly = el("div", { class: "kcd-field" });
+    fieldHourly.appendChild(el("label", {}, [txt("Quel est votre tarif horaire moyen actuel ?")]));
+    var inputHourly = el("input", { type: "number", min: "0", step: "1" });
+    if (state.timeValue.hourlyRate) inputHourly.value = state.timeValue.hourlyRate;
+    inputHourly.disabled = !!state.timeValue.hourlyRateUnknown;
+    fieldHourly.appendChild(inputHourly);
+    fieldHourly.appendChild(el("div", { class: "kcd-suffix" }, [txt("€")]));
+
+    var unknownWrap = el("label", { style: "display:flex; align-items:center; gap:8px; margin-top:10px; font-size:0.88rem; color:rgba(18,56,89,0.7); cursor:pointer;" });
+    var unknownCheckbox = el("input", { type: "checkbox" });
+    unknownCheckbox.checked = !!state.timeValue.hourlyRateUnknown;
+    unknownWrap.appendChild(unknownCheckbox);
+    unknownWrap.appendChild(txt("Je ne sais pas"));
+    unknownCheckbox.addEventListener("change", function(){
+      inputHourly.disabled = unknownCheckbox.checked;
+      if (unknownCheckbox.checked) inputHourly.value = "";
+    });
+    fieldHourly.appendChild(unknownWrap);
+    screen.appendChild(fieldHourly);
+
+    screen.appendChild(el("p", {}, [el("em", {}, [txt("Ces deux montants servent uniquement de repères. Ils ne prétendent pas fixer la valeur exacte d'une heure de votre vie.")])]));
+
+    screen.appendChild(navRow({
+      showPrev: true,
+      onPrev: prev,
+      onNext: function(){
+        var valid = true;
+
+        if (!currentAnswer) valid = false;
+
+        var required = (currentAnswer === "estimable" || currentAnswer === "hard");
+        var hoursRaw = inputH.value, minutesRaw = inputM.value, freqKey = select.value;
+        var providingValue = hoursRaw !== "" || minutesRaw !== "" || freqKey !== "";
+
+        if (currentAnswer && (required || providingValue)){
+          var hours = hoursRaw === "" ? 0 : parseFloat(hoursRaw);
+          var minutes = minutesRaw === "" ? 0 : parseFloat(minutesRaw);
+          if ((hours <= 0 && minutes <= 0)){ timeLabel.classList.add("kcd-invalid"); valid = false; } else { timeLabel.classList.remove("kcd-invalid"); }
+          if (!freqKey){ fieldFreq.classList.add("kcd-invalid"); valid = false; } else { fieldFreq.classList.remove("kcd-invalid"); }
+          if (valid){
+            var freq = freqByKey(freqKey);
+            state.time.hours = hours;
+            state.time.minutes = minutes;
+            state.time.frequency = freqKey;
+            state.time.annualMinutes = (hours * 60 + minutes) * freq.coef;
+          }
+        } else if (currentAnswer){
+          timeLabel.classList.remove("kcd-invalid");
+          fieldFreq.classList.remove("kcd-invalid");
+          state.time.hours = null;
+          state.time.minutes = null;
+          state.time.frequency = null;
+          state.time.annualMinutes = null;
+        }
+
+        var personalValue = inputPersonal.value === "" ? null : parseFloat(inputPersonal.value);
+        if (!personalValue || personalValue <= 0){ fieldPersonal.classList.add("kcd-invalid"); valid = false; } else { fieldPersonal.classList.remove("kcd-invalid"); }
+
+        if (!unknownCheckbox.checked){
+          var hourlyRate = inputHourly.value === "" ? null : parseFloat(inputHourly.value);
+          if (!hourlyRate || hourlyRate <= 0){ fieldHourly.classList.add("kcd-invalid"); valid = false; } else { fieldHourly.classList.remove("kcd-invalid"); }
+        } else {
+          fieldHourly.classList.remove("kcd-invalid");
+        }
+
+        if (!valid) return;
+
+        state.timeValue.personalValue = personalValue;
+        state.timeValue.hourlyRateUnknown = unknownCheckbox.checked;
+        state.timeValue.hourlyRate = unknownCheckbox.checked ? null : parseFloat(inputHourly.value);
+
+        var range = computeTimeValueRange();
+        state.timeValue.annualLow = range.low;
+        state.timeValue.annualHigh = range.high;
+
+        saveState();
+        next();
+      }
+    }));
+
+    main.appendChild(screen);
+  }
+
+  // ============================================================
+  // ÉCRAN 5 — CHARGE MENTALE + CONSÉQUENCES
+  // ============================================================
+
+  function renderMentalLoad(main){
+    var screen = el("div", { class: "kcd-screen" });
+    screen.appendChild(el("h2", {}, [txt("Et ce n'est pas tout...")]));
+    screen.appendChild(situationRecall());
+
+    var qField = el("div", { class: "kcd-field" });
+    qField.appendChild(el("label", {}, [txt("Quelle place cette situation prend-elle dans votre esprit ?")]));
+    var choiceList = el("div", { class: "kcd-choice-list" });
+    var currentLoad = state.mentalLoad;
+    var loadRefs = [];
+    MENTAL_LOAD_OPTIONS.forEach(function(label){
+      var c = choiceItem({
+        type: "radio", name: "mental-load", value: label, label: label, checked: currentLoad === label,
+        onChange: function(){
+          currentLoad = label;
+          loadRefs.forEach(function(ref){ ref.item.classList.toggle("selected", ref.value === currentLoad); });
+        }
+      });
+      loadRefs.push({ item: c.item, value: label });
+      choiceList.appendChild(c.item);
+    });
+    qField.appendChild(choiceList);
+    screen.appendChild(qField);
+
+    screen.appendChild(el("h3", {}, [txt("Quand cette situation vous pèse, qu'est-ce qu'elle finit aussi par affecter ?")]));
+    var consequenceList = el("div", { class: "kcd-choice-list" });
+    var selected = state.consequences.selected.slice();
+    var otherText = state.consequences.other || "";
+    var refs = [];
+
+    var otherField = el("div", { class: "kcd-field", style: "display:none; margin-top:-4px; margin-bottom:18px;" });
+    var otherInput = el("input", { type: "text" });
+    otherInput.value = otherText;
+    otherField.appendChild(otherInput);
+
+    function refreshConsequenceUI(){
+      refs.forEach(function(ref){
+        var isChecked = selected.indexOf(ref.key) !== -1;
+        ref.input.checked = isChecked;
+        ref.item.classList.toggle("selected", isChecked);
+      });
+      otherField.style.display = selected.indexOf(CONSEQUENCE_OTHER_KEY) !== -1 ? "block" : "none";
+    }
+
+    function toggleConsequence(key){
+      var idx = selected.indexOf(key);
+      if (key === CONSEQUENCE_NONE_KEY){
+        if (idx === -1){ selected = [CONSEQUENCE_NONE_KEY]; } else { selected = []; }
+      } else {
+        if (idx === -1){
+          selected.push(key);
+          var noneIdx = selected.indexOf(CONSEQUENCE_NONE_KEY);
+          if (noneIdx !== -1) selected.splice(noneIdx, 1);
+        } else {
+          selected.splice(idx, 1);
+        }
+      }
+      refreshConsequenceUI();
+    }
+
+    CONSEQUENCES.forEach(function(c){
+      var checked = selected.indexOf(c.key) !== -1;
+      var built = choiceItem({
+        type: "checkbox", name: "consequence", label: c.label, checked: checked,
+        onChange: function(){ toggleConsequence(c.key); }
+      });
+      refs.push({ key: c.key, input: built.input, item: built.item });
+      consequenceList.appendChild(built.item);
+    });
+
+    var otherBuilt = choiceItem({
+      type: "checkbox", name: "consequence", label: "Autre", checked: selected.indexOf(CONSEQUENCE_OTHER_KEY) !== -1,
+      onChange: function(){ toggleConsequence(CONSEQUENCE_OTHER_KEY); }
+    });
+    refs.push({ key: CONSEQUENCE_OTHER_KEY, input: otherBuilt.input, item: otherBuilt.item });
+    consequenceList.appendChild(otherBuilt.item);
+    consequenceList.appendChild(otherField);
+
+    var noneBuilt = choiceItem({
+      type: "checkbox", name: "consequence", label: "Rien de tout cela", checked: selected.indexOf(CONSEQUENCE_NONE_KEY) !== -1,
+      onChange: function(){ toggleConsequence(CONSEQUENCE_NONE_KEY); }
+    });
+    refs.push({ key: CONSEQUENCE_NONE_KEY, input: noneBuilt.input, item: noneBuilt.item });
+    consequenceList.appendChild(noneBuilt.item);
+
+    refreshConsequenceUI();
+    screen.appendChild(consequenceList);
+
+    var errorNote = el("div", { class: "kcd-field-error", style: "display:none; margin-bottom:16px;" }, [txt("Sélectionnez une option pour continuer.")]);
+    screen.appendChild(errorNote);
+
+    screen.appendChild(navRow({
+      showPrev: true,
+      onPrev: prev,
+      onNext: function(){
+        var valid = true;
+        if (!currentLoad) valid = false;
+        if (selected.length === 0) valid = false;
+        if (!valid){ errorNote.style.display = "block"; return; }
+        errorNote.style.display = "none";
+        state.mentalLoad = currentLoad;
+        state.consequences.selected = selected;
+        state.consequences.other = selected.indexOf(CONSEQUENCE_OTHER_KEY) !== -1 ? otherInput.value.trim() : "";
+        saveState();
+        next();
+      }
+    }));
+
+    main.appendChild(screen);
+  }
+
+  // ============================================================
+  // ÉCRAN 6 — SABOTEURS
+  // ============================================================
+
+  function renderSaboteurs(main){
+    var screen = el("div", { class: "kcd-screen" });
+    screen.appendChild(el("h2", {}, [txt("Et vos Saboteurs dans tout ça ?")]));
+    screen.appendChild(situationRecall());
+    screen.appendChild(el("p", {}, [txt("À la lumière de vos résultats au test et de ce que vous avez découvert sur les 5 Saboteurs, lequel ou lesquels pourraient intervenir ici ?")]));
+
+    var list = el("div", { class: "kcd-choice-list" });
+    var selected = state.saboteurs.slice();
+    var options = SABOTEURS.concat([UNKNOWN_LABEL]);
+    var refs = [];
+
+    options.forEach(function(name){
+      var built = choiceItem({
+        type: "checkbox", name: "saboteur", label: name, checked: selected.indexOf(name) !== -1,
+        onChange: function(input){
+        if (name === UNKNOWN_LABEL && input.checked){
+          selected = [UNKNOWN_LABEL];
+        } else if (input.checked){
+          var idx = selected.indexOf(UNKNOWN_LABEL);
+          if (idx !== -1) selected.splice(idx, 1);
+          selected.push(name);
+        } else {
+          var i2 = selected.indexOf(name);
+          if (i2 !== -1) selected.splice(i2, 1);
+        }
+        refs.forEach(function(ref){
+          var checked = selected.indexOf(ref.name) !== -1;
+          ref.input.checked = checked;
+          ref.item.classList.toggle("selected", checked);
+        });
+        }
+      });
+      refs.push({ name: name, input: built.input, item: built.item });
+      list.appendChild(built.item);
+    });
+    screen.appendChild(list);
+
+    var errorNote = el("div", { class: "kcd-field-error", style: "display:none; margin-bottom:16px;" }, [txt("Sélectionnez au moins une réponse pour continuer.")]);
+    screen.appendChild(errorNote);
+
+    screen.appendChild(navRow({
+      showPrev: true,
+      onPrev: prev,
+      onNext: function(){
+        if (selected.length === 0){ errorNote.style.display = "block"; return; }
+        errorNote.style.display = "none";
+        state.saboteurs = selected;
+        saveState();
+        next();
+      }
+    }));
+
+    main.appendChild(screen);
+  }
+
+  // ============================================================
+  // ÉCRAN 7 — MON DÉCLIC (synthèse)
+  // ============================================================
+
+  function moneyBulletText(){
+    if (state.money.answer === "estimable" && state.money.annualAmount !== null){
+      return formatEuros(state.money.annualAmount) + " / an identifiés";
+    }
+    if (state.money.answer === "hard" && state.money.annualAmount !== null){
+      return formatEuros(state.money.annualAmount) + " / an (estimation approximative)";
+    }
+    if (state.money.answer === "no") return "Pas d'impact financier direct identifié";
+    if (state.money.answer === "unknown" && state.money.annualAmount !== null){
+      return formatEuros(state.money.annualAmount) + " / an (estimation incertaine)";
+    }
+    return "Je ne sais pas encore";
+  }
+
+  function timeBulletText(){
+    if (state.time.answer === "estimable" && state.time.annualMinutes !== null){
+      return formatAnnualDuration(state.time.annualMinutes) + " identifiées";
+    }
+    if (state.time.answer === "hard" && state.time.annualMinutes !== null){
+      return formatAnnualDuration(state.time.annualMinutes) + " (estimation approximative)";
+    }
+    if (state.time.answer === "no") return "Pas de temps perdu identifié";
+    if (state.time.answer === "unknown" && state.time.annualMinutes !== null){
+      return formatAnnualDuration(state.time.annualMinutes) + " (estimation incertaine)";
+    }
+    return "Je ne sais pas encore";
+  }
+
+  function renderSummary(main){
+    var screen = el("div", { class: "kcd-screen" });
+    screen.appendChild(el("h1", {}, [txt("Mon Déclic")]));
+
+    screen.appendChild(el("h3", {}, [txt("La situation que j'ai choisie")]));
+    screen.appendChild(el("div", { class: "kcd-summary-block" }, [
+      el("div", { class: "kcd-summary-value", style: "font-size:1.1rem;" }, [txt("« " + state.situation.text + " »")])
+    ]));
+
+    screen.appendChild(el("h3", {}, [txt("Argent")]));
+    screen.appendChild(el("div", { class: "kcd-summary-block" }, [
+      el("div", { class: "kcd-summary-value kcd-accent" }, [txt(moneyBulletText())])
+    ]));
+
+    screen.appendChild(el("h3", {}, [txt("Temps")]));
+    screen.appendChild(el("div", { class: "kcd-summary-block" }, [
+      el("div", { class: "kcd-summary-value kcd-accent" }, [txt(timeBulletText())])
+    ]));
+
+    screen.appendChild(el("h3", {}, [txt("La valeur de ce temps")]));
+    var valueBlock = el("div", { class: "kcd-summary-block" });
+    var refLines = [];
+    refLines.push("Votre repère personnel : " + formatEuros(state.timeValue.personalValue) + " / heure");
+    if (!state.timeValue.hourlyRateUnknown && state.timeValue.hourlyRate){
+      refLines.push("Votre tarif horaire moyen : " + formatEuros(state.timeValue.hourlyRate) + " / heure");
+    }
+    refLines.forEach(function(line){ valueBlock.appendChild(el("div", { class: "kcd-summary-sub" }, [txt(line)])); });
+
+    if (state.timeValue.annualLow !== null && state.timeValue.annualHigh !== null){
+      if (state.timeValue.annualLow === state.timeValue.annualHigh){
+        valueBlock.appendChild(el("p", { style: "margin-top:14px;" }, [txt("Avec le montant que vous avez indiqué, ce temps représente une valeur d'environ :")]));
+        valueBlock.appendChild(el("div", { class: "kcd-summary-value kcd-accent", style: "font-size:1.6rem;" }, [txt(formatEuros(state.timeValue.annualLow) + " par an")]));
+      } else {
+        valueBlock.appendChild(el("p", { style: "margin-top:14px;" }, [txt("Selon les deux montants que vous avez indiqués, le temps absorbé par cette situation représente une valeur comprise entre :")]));
+        valueBlock.appendChild(el("div", { class: "kcd-summary-value kcd-accent", style: "font-size:1.6rem;" }, [txt(formatEuros(state.timeValue.annualLow) + " et " + formatEuros(state.timeValue.annualHigh) + " par an")]));
+      }
+      valueBlock.appendChild(el("p", {}, [el("em", {}, [txt("Cette fourchette donne un ordre de grandeur de la valeur du temps mobilisé. Elle ne correspond pas nécessairement à une perte de chiffre d'affaires.")])]));
+    }
+    screen.appendChild(valueBlock);
+
+    var domains = groupedDomains();
+    if (domains.length > 0){
+      screen.appendChild(el("h3", {}, [txt("Cette situation déborde aussi sur plusieurs domaines de votre vie")]));
+      domains.forEach(function(d){
+        var block = el("div", { class: "kcd-domain-block" });
+        block.appendChild(el("div", { class: "kcd-domain-title" }, [txt(d.label)]));
+        var ul = el("ul", { class: "kcd-domain-list" });
+        d.items.forEach(function(item){ ul.appendChild(el("li", {}, [txt(item)])); });
+        block.appendChild(ul);
+        screen.appendChild(block);
+      });
+      if (state.consequences.selected.indexOf(CONSEQUENCE_OTHER_KEY) !== -1 && state.consequences.other){
+        var otherBlock = el("div", { class: "kcd-domain-block" });
+        otherBlock.appendChild(el("div", { class: "kcd-domain-title" }, [txt("Autre conséquence identifiée")]));
+        otherBlock.appendChild(el("p", { style: "margin:0;" }, [txt(state.consequences.other)]));
+        screen.appendChild(otherBlock);
+      }
+    }
+
+    screen.appendChild(el("h3", {}, [txt("Les Saboteurs qui pourraient être impliqués")]));
+    var saboteurText = (state.saboteurs.indexOf(UNKNOWN_LABEL) !== -1) ? "Je ne sais pas encore." : state.saboteurs.join(", ");
+    screen.appendChild(el("div", { class: "kcd-summary-block" }, [
+      el("div", { class: "kcd-summary-value", style: "font-size:1.1rem;" }, [txt(saboteurText)])
+    ]));
+
+    var downloadIcon = "<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3v12\"/><path d=\"M7 10l5 5 5-5\"/><path d=\"M4 19h16\"/></svg>";
+    var pdfBtn = el("button", { class: "kcd-pdf-btn", type: "button", html: downloadIcon + "<span>Télécharger mon Déclic</span>" });
+    pdfBtn.addEventListener("click", function(){ generatePdf(); });
+    screen.appendChild(pdfBtn);
+    screen.appendChild(el("p", { class: "kcd-pdf-caption" }, [txt("Gardez une trace de ce Déclic, avec la situation, les chiffres et les Saboteurs identifiés.")]));
+
+    screen.appendChild(el("div", { class: "kcd-declic-echo" }, [
+      el("h2", {}, [txt("Et nous n'avons regardé qu'une seule situation.")])
+    ]));
+
+    screen.appendChild(navRow({
+      showPrev: true,
+      onPrev: prev,
+      onNext: next,
+      nextLabel: "Prendre un peu de recul"
+    }));
+
+    main.appendChild(screen);
+  }
+
+  // ============================================================
+  // ÉCRAN 8 — RÉASSURANCE
+  // ============================================================
+
+  function renderReassurance(main){
+    var screen = el("div", { class: "kcd-screen" });
+    screen.appendChild(el("h1", {}, [txt("Vous n'êtes pas seule.")]));
+    [
+      "Les comportements de sabotage financier ne disparaissent pas avec les revenus. On les retrouve dans un business à 500 € par mois comme dans un business à 10 000, 100 000 ou plus.",
+      "Les chiffres changent. Les mécanismes, eux, restent souvent en place.",
+      "Rien ne vous oblige à fonctionner ainsi pour toujours. Certains automatismes sont anciens, d'autres se sont installés sans bruit. Pour les modifier, il faut d'abord les voir, comprendre comment ils agissent, puis tester autre chose assez longtemps pour que ça devienne un nouveau réflexe.",
+      "Ça demande du travail. Les Saboteurs ne s'effacent pas tout seuls pendant qu'on attend sur le canapé.",
+      "Mais chaque fois qu'un vieux réflexe arrête de décider à votre place, vous récupérez quelque chose. De l'argent, parfois. Du temps, souvent. Et surtout, plus de choix.",
+      "Ce travail n'a pas vraiment de ligne d'arrivée. Votre business avance, vos ambitions aussi, et un nouveau palier réveille parfois un mécanisme qu'on croyait réglé.",
+      "C'est aussi ce qui le rend gratifiant : vous voyez, concrètement, que vous ne réagissez plus aujourd'hui comme hier.",
+      "L'identifier seule, comme vous venez de le faire, c'est déjà un vrai pas. Le travailler accompagnée accélère le processus, et évite de tourner en rond sur les mêmes constats."
+    ].forEach(function(p){ screen.appendChild(el("p", {}, [txt(p)])); });
+
+    screen.appendChild(navRow({ showPrev: true, onPrev: prev, onNext: next, nextLabel: "Continuer" }));
+    main.appendChild(screen);
+  }
+
+  // ============================================================
+  // ÉCRAN 9 — CTA KIF'CASH
+  // ============================================================
+
+  function renderCta(main){
+    var screen = el("div", { class: "kcd-screen" });
+    var box = el("div", { class: "kcd-cta-box" });
+    box.appendChild(el("h2", {}, [txt(CTA_CONFIG.title)]));
+    box.appendChild(el("p", {}, [txt(CTA_CONFIG.text)]));
+    var btn = el("a", { href: CTA_CONFIG.url, class: "kc-btn kc-btn-primary" }, [txt(CTA_CONFIG.buttonLabel)]);
+    box.appendChild(btn);
+    screen.appendChild(box);
+
+    var finalNav = el("div", { class: "kcd-nav" });
+    var prevBtn = el("button", { class: "kc-btn kc-btn-secondary", type: "button" }, [txt("Précédent")]);
+    prevBtn.addEventListener("click", prev);
+    finalNav.appendChild(prevBtn);
+    screen.appendChild(finalNav);
+
+    var restartBlock = el("div", { class: "kcd-restart-block" });
+    var restartBtn = el("button", { class: "kc-btn-text", type: "button" }, [txt("Recommencer un nouveau Déclic")]);
+    restartBtn.addEventListener("click", function(){ clearDeclicData(); saveState(); render(); });
+    restartBlock.appendChild(restartBtn);
+    screen.appendChild(restartBlock);
+
+    main.appendChild(screen);
+  }
+
+  // ============================================================
+  // GÉNÉRATION PDF
+  // ============================================================
+
+  function generatePdf(){
+    if (!window.jspdf || !window.jspdf.jsPDF){
+      alert("Le générateur de PDF n'a pas pu se charger. Vérifiez votre connexion et réessayez.");
+      return;
+    }
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF({ unit: "mm", format: "a4" });
+
+    var navy = [18, 56, 89];
+    var violet = [141, 30, 129];
+    var rose = [230, 15, 114];
+    var grey = [110, 120, 130];
+
+    var marginX = 20;
+    var pageWidth = 210;
+    var pageHeight = 297;
+    var contentWidth = pageWidth - marginX * 2;
+    var y = 22;
+    var bottomLimit = 270;
+
+    function setColor(rgb){ doc.setTextColor(rgb[0], rgb[1], rgb[2]); }
+
+    function ensureSpace(neededMm){
+      if (y + neededMm > bottomLimit){
+        doc.addPage();
+        y = 22;
+      }
+    }
+
+    function sectionTitle(text){
+      ensureSpace(14);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12.5);
+      setColor(violet);
+      doc.text(text, marginX, y);
+      y += 7;
+    }
+
+    function bodyText(text, opts){
+      opts = opts || {};
+      doc.setFont("helvetica", opts.bold ? "bold" : "normal");
+      doc.setFontSize(opts.size || 10.5);
+      setColor(opts.color || navy);
+      var lines = doc.splitTextToSize(text, contentWidth);
+      ensureSpace(lines.length * 5.2 + 2);
+      doc.text(lines, marginX, y);
+      y += lines.length * 5.2 + (opts.spacingAfter !== undefined ? opts.spacingAfter : 5);
+    }
+
+    function bigNumber(text){
+      // Même gabarit que le reste du corps de texte, juste mis en gras pour ressortir légèrement.
+      bodyText(text, { bold: true, spacingAfter: 6 });
+    }
+
+    function divider(){
+      doc.setDrawColor(230, 230, 230);
+      doc.setLineWidth(0.3);
+      doc.line(marginX, y, pageWidth - marginX, y);
+      y += 8;
+    }
+
+    // ---------- EN-TÊTE ----------
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    setColor(violet);
+    doc.text("KIF'CASH · CHENILLE PAPILLON", marginX, y);
+    y += 10;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(24);
+    setColor(navy);
+    doc.text("Mon Déclic", marginX, y);
+    y += 3;
+    doc.setDrawColor(violet[0], violet[1], violet[2]);
+    doc.setLineWidth(1);
+    doc.line(marginX, y + 4, marginX + 34, y + 4);
+    y += 16;
+
+    // ---------- SITUATION ----------
+    sectionTitle("La situation que j'ai choisie");
+    bodyText("« " + state.situation.text + " »", { italic: false, size: 11.5, bold: true, spacingAfter: 8 });
+    divider();
+
+    // ---------- ARGENT ----------
+    sectionTitle("Argent");
+    bigNumber(moneyBulletText());
+    y += 2;
+
+    // ---------- TEMPS ----------
+    sectionTitle("Temps");
+    bigNumber(timeBulletText());
+    y += 2;
+
+    // ---------- VALEUR DU TEMPS ----------
+    sectionTitle("La valeur de ce temps");
+    bodyText("Votre repère personnel : " + formatEuros(state.timeValue.personalValue) + " / heure", { size: 10, color: grey, spacingAfter: 2 });
+    if (!state.timeValue.hourlyRateUnknown && state.timeValue.hourlyRate){
+      bodyText("Votre tarif horaire moyen : " + formatEuros(state.timeValue.hourlyRate) + " / heure", { size: 10, color: grey, spacingAfter: 4 });
+    }
+    if (state.timeValue.annualLow !== null && state.timeValue.annualHigh !== null){
+      y += 2;
+      if (state.timeValue.annualLow === state.timeValue.annualHigh){
+        bigNumber(formatEuros(state.timeValue.annualLow) + " par an");
+      } else {
+        bigNumber(formatEuros(state.timeValue.annualLow) + " à " + formatEuros(state.timeValue.annualHigh) + " / an");
+      }
+      bodyText("Ordre de grandeur de la valeur du temps mobilisé, pas une perte de chiffre d'affaires certaine.", { size: 9, color: grey, spacingAfter: 4 });
+    }
+    divider();
+
+    // ---------- DOMAINES ----------
+    var domains = groupedDomains();
+    if (domains.length > 0){
+      sectionTitle("Cette situation déborde aussi sur plusieurs domaines de votre vie");
+      domains.forEach(function(d){
+        ensureSpace(8);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10.5);
+        setColor(navy);
+        doc.text(d.label, marginX, y);
+        y += 6;
+        d.items.forEach(function(item){
+          bodyText("– " + item, { size: 9.5, color: navy, spacingAfter: 2 });
+        });
+        y += 3;
+      });
+      if (state.consequences.selected.indexOf(CONSEQUENCE_OTHER_KEY) !== -1 && state.consequences.other){
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10.5);
+        setColor(navy);
+        ensureSpace(8);
+        doc.text("Autre conséquence identifiée", marginX, y);
+        y += 6;
+        bodyText(state.consequences.other, { size: 9.5, spacingAfter: 4 });
+      }
+      divider();
+    }
+
+    // ---------- SABOTEURS ----------
+    sectionTitle("Les Saboteurs qui pourraient être impliqués");
+    var saboteurText = (state.saboteurs.indexOf(UNKNOWN_LABEL) !== -1) ? "Je ne sais pas encore." : state.saboteurs.join(", ");
+    bodyText(saboteurText, { size: 11, bold: true, spacingAfter: 6 });
+
+    // ---------- PHRASE FORTE ----------
+    ensureSpace(16);
+    y += 4;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    setColor(navy);
+    var echoLines = doc.splitTextToSize("Et nous n'avons regardé qu'une seule situation.", contentWidth);
+    doc.text(echoLines, marginX, y);
+    y += echoLines.length * 7 + 6;
+
+    // ---------- LIENS ----------
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    setColor(grey);
+    bodyText("Poursuivre avec Kif'Cash : " + CTA_CONFIG.url, { size: 9.5, color: grey, spacingAfter: 2 });
+    bodyText("Refaire Le Déclic : " + DECLIC_URL, { size: 9.5, color: grey, spacingAfter: 10 });
+
+    // ---------- CONTACT ----------
+    ensureSpace(20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    setColor(violet);
+    doc.text("Une question, une envie d'en parler ?", marginX, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    setColor(navy);
+    doc.text("Contactez Juliette :", marginX, y);
+    var contactLabelWidth = doc.getTextWidth("Contactez Juliette : ");
+    doc.setFont("helvetica", "bold");
+    setColor(navy);
+    doc.textWithLink("juliette@chenillepapillon.be", marginX + contactLabelWidth, y, { url: "mailto:juliette@chenillepapillon.be" });
+    y += 12;
+
+    // ---------- MENTIONS LÉGALES (bas de dernière page) ----------
+    var legalY = pageHeight - 22;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    setColor(grey);
+    doc.text("© Juliette Bodson 2026, Tous droits réservés", marginX, legalY);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.8);
+    var copyrightLines = doc.splitTextToSize(
+      "Les contenus, exercices, textes et outils de l'expérience Kif'Cash et des Saboteurs Financiers sont protégés par le droit d'auteur. Toute reproduction, adaptation, diffusion ou utilisation, totale ou partielle, sans autorisation écrite préalable est interdite. Ce document est réservé à votre usage personnel.",
+      contentWidth
+    );
+    doc.text(copyrightLines, marginX, legalY + 4);
+
+    var warningLines = doc.splitTextToSize(
+      "Les résultats et montants présentés dans ce document sont des estimations calculées à partir des informations que vous avez vous-même renseignées. Ils ont une vocation pédagogique et ne constituent ni une analyse comptable, ni un conseil financier, fiscal ou en investissement. Toute décision financière reste sous votre responsabilité et peut nécessiter l'avis d'un professionnel qualifié.",
+      contentWidth
+    );
+    doc.text(warningLines, marginX, legalY + 4 + copyrightLines.length * 3);
+
+    doc.save("mon-declic.pdf");
+  }
+
+  // ============================================================
+  // ROUTEUR
+  // ============================================================
+
+  var resumeMode = false;
+
+  function render(){
+    var main = document.getElementById("kcd-main");
+    main.innerHTML = "";
+
+    if (resumeMode){
+      document.getElementById("kcd-progress").hidden = true;
+      renderResume(main);
+      return;
+    }
+
+    updateProgress();
+    var screenId = currentScreenId();
+    if (screenId === "intro") renderIntro(main);
+    else if (screenId === "situation") renderSituation(main);
+    else if (screenId === "money") renderMoney(main);
+    else if (screenId === "time") renderTime(main);
+    else if (screenId === "mentalload") renderMentalLoad(main);
+    else if (screenId === "saboteurs") renderSaboteurs(main);
+    else if (screenId === "summary") renderSummary(main);
+    else if (screenId === "reassurance") renderReassurance(main);
+    else if (screenId === "cta") renderCta(main);
+
+    window.scrollTo(0, 0);
+  }
+
+  // ============================================================
+  // INITIALISATION
+  // ============================================================
+
+  var saved = loadSavedState();
+  if (saved){ state = saved; resumeMode = true; }
+  else { state = emptyState(); resumeMode = false; }
+
+  render();
+
+})();
+</script>
+</body>
+</html>
