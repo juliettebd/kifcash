@@ -1386,201 +1386,530 @@
       alert("Le générateur de PDF n'a pas pu se charger. Vérifiez votre connexion et réessayez.");
       return;
     }
+
     var jsPDF = window.jspdf.jsPDF;
     var doc = new jsPDF({ unit: "mm", format: "a4" });
 
+    // Couleurs Kif'Cash
     var navy = [18, 56, 89];
     var violet = [141, 30, 129];
     var rose = [230, 15, 114];
-    var grey = [110, 120, 130];
+    var mist = [245, 245, 242];
+    var light = [250, 250, 249];
+    var grey = [96, 113, 128];
+    var paleGrey = [154, 163, 170];
+    var line = [220, 226, 230];
+    var white = [255, 255, 255];
 
-    var marginX = 20;
     var pageWidth = 210;
     var pageHeight = 297;
+    var marginX = 18;
     var contentWidth = pageWidth - marginX * 2;
-    var y = 22;
-    var bottomLimit = 270;
+    var footerY = 282;
+    var currentPage = 1;
 
-    function setColor(rgb){ doc.setTextColor(rgb[0], rgb[1], rgb[2]); }
+    function textColor(rgb){ doc.setTextColor(rgb[0], rgb[1], rgb[2]); }
+    function fillColor(rgb){ doc.setFillColor(rgb[0], rgb[1], rgb[2]); }
+    function drawColor(rgb){ doc.setDrawColor(rgb[0], rgb[1], rgb[2]); }
 
-    function ensureSpace(neededMm){
-      if (y + neededMm > bottomLimit){
-        doc.addPage();
-        y = 22;
-      }
+    function addPage(){
+      doc.addPage();
+      currentPage += 1;
+      drawPageBrand();
     }
 
-    function sectionTitle(text){
-      ensureSpace(14);
+    function drawPageBrand(){
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12.5);
-      setColor(violet);
-      doc.text(text, marginX, y);
-      y += 7;
+      doc.setFontSize(9.5);
+      textColor(navy);
+      doc.text("Kif'", marginX, 15);
+      var prefixW = doc.getTextWidth("Kif'");
+      textColor(violet);
+      doc.text("Cash", marginX + prefixW, 15);
     }
 
-    function bodyText(text, opts){
+    function smallLabel(text, x, y, color){
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.2);
+      textColor(color || violet);
+      doc.text(String(text).toUpperCase(), x, y);
+    }
+
+    function drawWrappedText(text, x, y, maxWidth, opts){
       opts = opts || {};
       doc.setFont("helvetica", opts.bold ? "bold" : "normal");
-      doc.setFontSize(opts.size || 10.5);
-      setColor(opts.color || navy);
-      var lines = doc.splitTextToSize(text, contentWidth);
-      ensureSpace(lines.length * 5.2 + 2);
-      doc.text(lines, marginX, y);
-      y += lines.length * 5.2 + (opts.spacingAfter !== undefined ? opts.spacingAfter : 5);
+      doc.setFontSize(opts.size || 9.5);
+      textColor(opts.color || navy);
+      var lines = doc.splitTextToSize(String(text || ""), maxWidth);
+      var lineHeight = opts.lineHeight || ((opts.size || 9.5) * 0.38 + 1.2);
+      doc.text(lines, x, y);
+      return { lines: lines, height: lines.length * lineHeight, lineHeight: lineHeight };
     }
 
-    function bigNumber(text){
-      // Même gabarit que le reste du corps de texte, juste mis en gras pour ressortir légèrement.
-      bodyText(text, { bold: true, spacingAfter: 6 });
-    }
-
-    function divider(){
-      doc.setDrawColor(230, 230, 230);
-      doc.setLineWidth(0.3);
-      doc.line(marginX, y, pageWidth - marginX, y);
-      y += 8;
-    }
-
-    // ---------- EN-TÊTE ----------
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
-    setColor(violet);
-    doc.text("KIF'CASH · CHENILLE PAPILLON", marginX, y);
-    y += 10;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(24);
-    setColor(navy);
-    doc.text("Mon Déclic", marginX, y);
-    y += 3;
-    doc.setDrawColor(violet[0], violet[1], violet[2]);
-    doc.setLineWidth(1);
-    doc.line(marginX, y + 4, marginX + 34, y + 4);
-    y += 16;
-
-    // ---------- SITUATION ----------
-    sectionTitle("La situation que j'ai choisie");
-    bodyText("« " + state.situation.text + " »", { italic: false, size: 11.5, bold: true, spacingAfter: 8 });
-    divider();
-
-    // ---------- ARGENT ----------
-    sectionTitle("Argent");
-    bigNumber(moneyBulletText());
-    y += 2;
-
-    // ---------- TEMPS ----------
-    sectionTitle("Temps");
-    bigNumber(timeBulletText());
-    y += 2;
-
-    // ---------- VALEUR DU TEMPS ----------
-    sectionTitle("La valeur de ce temps");
-    bodyText("Votre repère personnel : " + formatEuros(state.timeValue.personalValue) + " / heure", { size: 10, color: grey, spacingAfter: 2 });
-    if (!state.timeValue.hourlyRateUnknown && state.timeValue.hourlyRate){
-      bodyText("Votre tarif horaire moyen : " + formatEuros(state.timeValue.hourlyRate) + " / heure", { size: 10, color: grey, spacingAfter: 4 });
-    }
-    if (state.timeValue.annualLow !== null && state.timeValue.annualHigh !== null){
-      y += 2;
-      if (state.timeValue.annualLow === state.timeValue.annualHigh){
-        bigNumber(formatEuros(state.timeValue.annualLow) + " par an");
-      } else {
-        bigNumber(formatEuros(state.timeValue.annualLow) + " à " + formatEuros(state.timeValue.annualHigh) + " / an");
+    function metricDisplayMoney(){
+      if (state.money.answer === "estimable" && state.money.annualAmount !== null){
+        return { value: formatEuros(state.money.annualAmount), note: "par an identifiés" };
       }
-      bodyText("Ordre de grandeur de la valeur du temps mobilisé, pas une perte de chiffre d'affaires certaine.", { size: 9, color: grey, spacingAfter: 4 });
+      if (state.money.answer === "hard" && state.money.annualAmount !== null){
+        return { value: formatEuros(state.money.annualAmount), note: "estimation approximative / an" };
+      }
+      if (state.money.answer === "unknown" && state.money.annualAmount !== null){
+        return { value: formatEuros(state.money.annualAmount), note: "estimation incertaine / an" };
+      }
+      if (state.money.answer === "no"){
+        return { value: "Pas d'impact direct", note: "identifié sur cette situation" };
+      }
+      return { value: "À préciser", note: "pas encore chiffré" };
     }
-    divider();
 
-    // ---------- DOMAINES ----------
-    var domains = groupedDomains();
-    if (domains.length > 0){
-      sectionTitle("Cette situation déborde aussi sur plusieurs domaines de votre vie");
-      domains.forEach(function(d){
-        ensureSpace(8);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10.5);
-        setColor(navy);
-        doc.text(d.label, marginX, y);
-        y += 6;
-        d.items.forEach(function(item){
-          bodyText("– " + item, { size: 9.5, color: navy, spacingAfter: 2 });
-        });
-        y += 3;
-      });
+    function metricDisplayTime(){
+      if (state.time.answer === "estimable" && state.time.annualMinutes !== null){
+        return { value: formatAnnualDuration(state.time.annualMinutes).replace(" / an", ""), note: "par an absorbées" };
+      }
+      if (state.time.answer === "hard" && state.time.annualMinutes !== null){
+        return { value: formatAnnualDuration(state.time.annualMinutes).replace(" / an", ""), note: "estimation approximative / an" };
+      }
+      if (state.time.answer === "unknown" && state.time.annualMinutes !== null){
+        return { value: formatAnnualDuration(state.time.annualMinutes).replace(" / an", ""), note: "estimation incertaine / an" };
+      }
+      if (state.time.answer === "no"){
+        return { value: "Pas de temps perdu", note: "identifié sur cette situation" };
+      }
+      return { value: "À préciser", note: "pas encore chiffré" };
+    }
+
+    function drawMetricCard(x, y, width, height, label, value, note){
+      drawColor(line);
+      doc.setLineWidth(0.25);
+      doc.rect(x, y, width, height);
+
+      smallLabel(label, x + 5, y + 7, grey);
+
+      var valueSize = value.length > 20 ? 12 : (value.length > 13 ? 15 : 20);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(valueSize);
+      textColor(violet);
+      var valueLines = doc.splitTextToSize(value, width - 10);
+      doc.text(valueLines, x + 5, y + 18);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      textColor(grey);
+      var noteLines = doc.splitTextToSize(note, width - 10);
+      doc.text(noteLines, x + 5, y + height - 7);
+    }
+
+    function mentalLoadIndex(){
+      var idx = MENTAL_LOAD_OPTIONS.indexOf(state.mentalLoad);
+      return idx >= 0 ? idx + 1 : 0;
+    }
+
+    function drawMentalScale(x, y, width){
+      var count = MENTAL_LOAD_OPTIONS.length;
+      var active = mentalLoadIndex();
+      var gap = width / (count - 1);
+
+      drawColor(line);
+      doc.setLineWidth(0.6);
+      doc.line(x, y, x + width, y);
+
+      for (var i = 0; i < count; i++){
+        var cx = x + gap * i;
+        if (i < active){
+          fillColor(violet);
+          drawColor(violet);
+        } else {
+          fillColor(white);
+          drawColor(line);
+        }
+        doc.circle(cx, y, 1.7, "FD");
+      }
+    }
+
+    function consequenceGroups(){
+      var groups = groupedDomains();
       if (state.consequences.selected.indexOf(CONSEQUENCE_OTHER_KEY) !== -1 && state.consequences.other){
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10.5);
-        setColor(navy);
-        ensureSpace(8);
-        doc.text("Autre conséquence identifiée", marginX, y);
-        y += 6;
-        bodyText(state.consequences.other, { size: 9.5, spacingAfter: 4 });
+        groups.push({ label: "Autre conséquence identifiée", items: [state.consequences.other] });
       }
-      divider();
+      return groups;
     }
 
-    // ---------- SABOTEURS ----------
-    sectionTitle("Les Saboteurs qui pourraient être impliqués");
-    var saboteurText = (state.saboteurs.indexOf(UNKNOWN_LABEL) !== -1) ? "Je ne sais pas encore." : state.saboteurs.join(", ");
-    bodyText(saboteurText, { size: 11, bold: true, spacingAfter: 6 });
+    function domainCardHeight(items, width){
+      var h = 13;
+      items.forEach(function(item){
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.9);
+        var lines = doc.splitTextToSize(item, width - 13);
+        h += Math.max(4.2, lines.length * 3.5 + 1.2);
+      });
+      return Math.max(24, h + 3);
+    }
 
-    // ---------- PHRASE FORTE ----------
-    ensureSpace(16);
-    y += 4;
+    function drawDomainCard(x, y, width, label, items){
+      var height = domainCardHeight(items, width);
+      fillColor(light);
+      doc.rect(x, y, width, height, "F");
+      fillColor(violet);
+      doc.rect(x, y, width, 1.2, "F");
+
+      smallLabel(label, x + 5, y + 7, violet);
+      var cursor = y + 13;
+
+      items.forEach(function(item){
+        fillColor(rose);
+        doc.circle(x + 5.2, cursor - 1.1, 0.65, "F");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.9);
+        textColor(navy);
+        var lines = doc.splitTextToSize(item, width - 13);
+        doc.text(lines, x + 8.5, cursor);
+        cursor += Math.max(4.2, lines.length * 3.5 + 1.2);
+      });
+      return height;
+    }
+
+    function drawSaboteurBadge(text, x, y){
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.6);
+      var padX = 4;
+      var width = Math.min(75, doc.getTextWidth(text.toUpperCase()) + padX * 2);
+      drawColor([195, 157, 191]);
+      fillColor([250, 246, 249]);
+      doc.roundedRect(x, y, width, 8, 4, 4, "FD");
+      textColor(violet);
+      doc.text(text.toUpperCase(), x + padX, y + 5.2);
+      return width;
+    }
+
+    function drawCtaButton(x, y, width, label, url){
+      fillColor(rose);
+      doc.roundedRect(x, y, width, 11, 2, 2, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.6);
+      textColor(white);
+      var textWidth = doc.getTextWidth(label);
+      doc.text(label, x + (width - textWidth) / 2, y + 7);
+      doc.link(x, y, width, 11, { url: url });
+    }
+
+    function drawLegalBlock(){
+      var y = 267;
+      drawColor(line);
+      doc.setLineWidth(0.25);
+      doc.line(marginX, y, pageWidth - marginX, y);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.6);
+      textColor(grey);
+      doc.text("© Juliette Bodson 2026, Tous droits réservés", marginX, y + 4.5);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(5.8);
+      textColor(paleGrey);
+      var legal = "Les contenus, exercices, textes et outils de l'expérience Kif'Cash et des Saboteurs Financiers sont protégés par le droit d'auteur. Toute reproduction, adaptation, diffusion ou utilisation, totale ou partielle, sans autorisation écrite préalable est interdite. Ce document est réservé à votre usage personnel.";
+      var legalLines = doc.splitTextToSize(legal, contentWidth);
+      doc.text(legalLines, marginX, y + 8);
+
+      var warning = "Les résultats et montants présentés sont des estimations calculées à partir des informations que vous avez renseignées. Ils ont une vocation pédagogique et ne constituent ni une analyse comptable, ni un conseil financier, fiscal ou en investissement. Toute décision financière reste sous votre responsabilité et peut nécessiter l'avis d'un professionnel qualifié.";
+      var warningLines = doc.splitTextToSize(warning, contentWidth);
+      doc.text(warningLines, marginX, y + 8 + legalLines.length * 2.4);
+    }
+
+    function addPageNumbers(){
+      var total = doc.getNumberOfPages();
+      for (var i = 1; i <= total; i++){
+        doc.setPage(i);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6.8);
+        textColor(paleGrey);
+        doc.text("Kif'Cash · Mon Déclic · " + i + " / " + total, pageWidth - marginX, footerY, { align: "right" });
+      }
+    }
+
+    // ============================================================
+    // PAGE 1 : LA PRISE DE CONSCIENCE
+    // ============================================================
+
+    drawPageBrand();
+
+    smallLabel("Votre bilan personnel", marginX, 30, rose);
+
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    setColor(navy);
-    var echoLines = doc.splitTextToSize("Et nous n'avons regardé qu'une seule situation.", contentWidth);
-    doc.text(echoLines, marginX, y);
-    y += echoLines.length * 7 + 6;
+    doc.setFontSize(29);
+    textColor(navy);
+    doc.text("Mon Déclic", marginX, 43);
 
-    // ---------- LIENS ----------
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
-    setColor(grey);
-    bodyText("Poursuivre avec Kif'Cash : " + CTA_CONFIG.url, { size: 9.5, color: grey, spacingAfter: 2 });
-    bodyText("Refaire Le Déclic : " + DECLIC_URL, { size: 9.5, color: grey, spacingAfter: 10 });
+    doc.setFontSize(10.5);
+    textColor(grey);
+    doc.text("Une situation, son coût concret et tout ce qu'elle mobilise autour d'elle.", marginX, 51);
 
-    // ---------- CONTACT ----------
-    ensureSpace(20);
+    // Situation
+    var situationY = 62;
+    var situationLines = doc.splitTextToSize("« " + state.situation.text + " »", contentWidth - 14);
+    var situationHeight = Math.max(31, 18 + situationLines.length * 5.3);
+    fillColor(mist);
+    doc.rect(marginX, situationY, contentWidth, situationHeight, "F");
+    fillColor(violet);
+    doc.rect(marginX, situationY, 2, situationHeight, "F");
+    smallLabel("La situation que j'ai regardée", marginX + 7, situationY + 8, violet);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    setColor(violet);
-    doc.text("Une question, une envie d'en parler ?", marginX, y);
-    y += 6;
+    doc.setFontSize(11.5);
+    textColor(navy);
+    doc.text(situationLines, marginX + 7, situationY + 18);
+
+    // Trois indicateurs
+    var metricsY = situationY + situationHeight + 8;
+    var gap = 4;
+    var cardWidth = (contentWidth - gap * 2) / 3;
+    var cardHeight = 36;
+    var moneyMetric = metricDisplayMoney();
+    var timeMetric = metricDisplayTime();
+    var mentalValue = state.mentalLoad || "À préciser";
+
+    drawMetricCard(marginX, metricsY, cardWidth, cardHeight, "Argent", moneyMetric.value, moneyMetric.note);
+    drawMetricCard(marginX + cardWidth + gap, metricsY, cardWidth, cardHeight, "Temps", timeMetric.value, timeMetric.note);
+    drawMetricCard(marginX + (cardWidth + gap) * 2, metricsY, cardWidth, cardHeight, "Place dans ma tête", mentalValue, "réponse déclarée");
+
+    // Valeur du temps
+    var timeBoxY = metricsY + cardHeight + 8;
+    var timeBoxHeight = 54;
+    fillColor(navy);
+    doc.rect(marginX, timeBoxY, contentWidth, timeBoxHeight, "F");
+    smallLabel("Ce temps a aussi une valeur", marginX + 7, timeBoxY + 9, [203, 211, 218]);
+
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
-    setColor(navy);
-    doc.text("Contactez Juliette :", marginX, y);
-    var contactLabelWidth = doc.getTextWidth("Contactez Juliette : ");
+    doc.setFontSize(8.8);
+    textColor([210, 220, 227]);
+    doc.text("Votre repère personnel", marginX + 7, timeBoxY + 19);
     doc.setFont("helvetica", "bold");
-    setColor(navy);
-    doc.textWithLink("juliette@chenillepapillon.be", marginX + contactLabelWidth, y, { url: "mailto:juliette@chenillepapillon.be" });
-    y += 12;
+    doc.setFontSize(12);
+    textColor(white);
+    doc.text(formatEuros(state.timeValue.personalValue) + " / h", marginX + 7, timeBoxY + 27);
 
-    // ---------- MENTIONS LÉGALES (bas de dernière page) ----------
-    var legalY = pageHeight - 22;
+    if (!state.timeValue.hourlyRateUnknown && state.timeValue.hourlyRate){
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.8);
+      textColor([210, 220, 227]);
+      doc.text("Votre tarif horaire moyen", marginX + 7, timeBoxY + 37);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      textColor(white);
+      doc.text(formatEuros(state.timeValue.hourlyRate) + " / h", marginX + 7, timeBoxY + 45);
+    }
+
+    var valueX = marginX + 74;
+    var valueW = contentWidth - 81;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    textColor([210, 220, 227]);
+    doc.text("Ordre de grandeur de la valeur du temps mobilisé", valueX, timeBoxY + 19);
+
+    var valueRangeText = "Pas d'équivalent calculable";
+    if (state.timeValue.annualLow !== null && state.timeValue.annualHigh !== null){
+      valueRangeText = state.timeValue.annualLow === state.timeValue.annualHigh
+        ? formatEuros(state.timeValue.annualLow) + " / an"
+        : formatEuros(state.timeValue.annualLow) + " à " + formatEuros(state.timeValue.annualHigh) + " / an";
+    }
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    setColor(grey);
-    doc.text("© Juliette Bodson 2026, Tous droits réservés", marginX, legalY);
+    doc.setFontSize(valueRangeText.length > 28 ? 15 : 18);
+    textColor(white);
+    var valueLines = doc.splitTextToSize(valueRangeText, valueW);
+    doc.text(valueLines, valueX, timeBoxY + 29);
+
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6.8);
-    var copyrightLines = doc.splitTextToSize(
-      "Les contenus, exercices, textes et outils de l'expérience Kif'Cash et des Saboteurs Financiers sont protégés par le droit d'auteur. Toute reproduction, adaptation, diffusion ou utilisation, totale ou partielle, sans autorisation écrite préalable est interdite. Ce document est réservé à votre usage personnel.",
-      contentWidth
-    );
-    doc.text(copyrightLines, marginX, legalY + 4);
+    textColor([190, 202, 211]);
+    var disclaimer = doc.splitTextToSize("Cette mise en perspective ne correspond pas nécessairement à une perte de chiffre d'affaires.", valueW);
+    doc.text(disclaimer, valueX, timeBoxY + 43);
 
-    var warningLines = doc.splitTextToSize(
-      "Les résultats et montants présentés dans ce document sont des estimations calculées à partir des informations que vous avez vous-même renseignées. Ils ont une vocation pédagogique et ne constituent ni une analyse comptable, ni un conseil financier, fiscal ou en investissement. Toute décision financière reste sous votre responsabilité et peut nécessiter l'avis d'un professionnel qualifié.",
-      contentWidth
-    );
-    doc.text(warningLines, marginX, legalY + 4 + copyrightLines.length * 3);
+    // Premier aperçu des conséquences
+    var domains = consequenceGroups();
+    var previewY = timeBoxY + timeBoxHeight + 11;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11.5);
+    textColor(navy);
+    doc.text("Cette situation déborde aussi ailleurs", marginX, previewY);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.6);
+    textColor(grey);
+    var domainNames = domains.length ? domains.map(function(d){ return d.label; }).join(" · ") : "Aucune conséquence supplémentaire identifiée.";
+    var domainLines = doc.splitTextToSize(domainNames, contentWidth);
+    doc.text(domainLines, marginX, previewY + 7);
+
+    // ============================================================
+    // PAGE 2 : PROPAGATION, SABOTEURS ET BASCULE
+    // ============================================================
+
+    addPage();
+    var y = 30;
+
+    smallLabel("Charge mentale", marginX, y, violet);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(17);
+    textColor(navy);
+    doc.text("La place que cette situation occupe", marginX, y + 9);
+
+    var mentalX = 128;
+    var mentalW = pageWidth - marginX - mentalX;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    textColor(violet);
+    var mentalLines = doc.splitTextToSize(state.mentalLoad || "À préciser", mentalW);
+    doc.text(mentalLines, pageWidth - marginX, y + 3, { align: "right" });
+    drawMentalScale(mentalX, y + 14, mentalW - 3);
+
+    drawColor(line);
+    doc.setLineWidth(0.25);
+    doc.line(marginX, y + 23, pageWidth - marginX, y + 23);
+    y += 33;
+
+    // Cartes des domaines touchés
+    if (domains.length > 0){
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      textColor(navy);
+      doc.text("Ce que cette situation finit aussi par affecter", marginX, y);
+      y += 8;
+
+      var colGap = 5;
+      var colWidth = (contentWidth - colGap) / 2;
+      var colY = [y, y];
+
+      domains.forEach(function(domain){
+        var targetCol = colY[0] <= colY[1] ? 0 : 1;
+        var x = marginX + targetCol * (colWidth + colGap);
+        var needed = domainCardHeight(domain.items, colWidth);
+
+        if (colY[targetCol] + needed > 190){
+          // Si la matière est exceptionnellement longue, on ajoute une page propre plutôt que de tasser.
+          addPage();
+          y = 30;
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(12);
+          textColor(navy);
+          doc.text("Les répercussions que vous avez identifiées", marginX, y);
+          y += 9;
+          colY = [y, y];
+          targetCol = 0;
+          x = marginX;
+        }
+
+        var h = drawDomainCard(x, colY[targetCol], colWidth, domain.label, domain.items);
+        colY[targetCol] += h + 5;
+      });
+
+      y = Math.max(colY[0], colY[1]) + 4;
+    } else {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      textColor(grey);
+      doc.text("Aucune conséquence supplémentaire n'a été identifiée dans cette situation.", marginX, y);
+      y += 12;
+    }
+
+    // Si les conséquences ont forcé une page supplémentaire, on garde la suite sur la page courante.
+    if (y > 205){
+      addPage();
+      y = 30;
+    }
+
+    // Saboteurs potentiellement impliqués
+    smallLabel("Saboteurs potentiellement impliqués", marginX, y, violet);
+    y += 6;
+
+    if (state.saboteurs.indexOf(UNKNOWN_LABEL) !== -1){
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      textColor(navy);
+      doc.text("Je ne sais pas encore.", marginX, y + 5);
+      y += 15;
+    } else {
+      var badgeX = marginX;
+      var badgeY = y;
+      state.saboteurs.forEach(function(name){
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.6);
+        var badgeWidth = Math.min(75, doc.getTextWidth(name.toUpperCase()) + 8);
+        if (badgeX + badgeWidth > pageWidth - marginX){
+          badgeX = marginX;
+          badgeY += 11;
+        }
+        drawSaboteurBadge(name, badgeX, badgeY);
+        badgeX += badgeWidth + 4;
+      });
+      y = badgeY + 15;
+    }
+
+    // Phrase de bascule
+    var climaxHeight = 43;
+    if (y + climaxHeight + 62 > 260){
+      addPage();
+      y = 30;
+    }
+
+    y += 4;
+    drawColor(line);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 16;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    textColor(navy);
+    var echo = doc.splitTextToSize("Et nous n'avons regardé qu'une seule situation.", contentWidth - 24);
+    doc.text(echo, pageWidth / 2, y, { align: "center" });
+    y += echo.length * 7 + 5;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.8);
+    textColor(grey);
+    var echoSub = doc.splitTextToSize("Ce Déclic montre ce qu'un comportement peut déjà mobiliser quand on prend le temps de regarder au-delà du seul montant visible.", contentWidth - 28);
+    doc.text(echoSub, pageWidth / 2, y, { align: "center" });
+    y += echoSub.length * 4 + 13;
+
+    drawColor(line);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 11;
+
+    // Bloc de continuité Kif'Cash
+    var ctaHeight = 49;
+    if (y + ctaHeight > 256){
+      addPage();
+      y = 30;
+    }
+
+    fillColor(navy);
+    doc.rect(marginX, y, contentWidth, ctaHeight, "F");
+    smallLabel("Pour aller plus loin", marginX + 7, y + 9, [198, 209, 217]);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(17);
+    textColor(white);
+    doc.text("Kif'Cash", marginX + 7, y + 19);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.3);
+    textColor([218, 225, 231]);
+    var ctaCopy = doc.splitTextToSize("Déjouez vos Saboteurs Financiers pour repérer les mécanismes qui se reproduisent dans votre réalité, comprendre ce qui les entretient et commencer à agir autrement.", 107);
+    doc.text(ctaCopy, marginX + 7, y + 27);
+
+    drawCtaButton(pageWidth - marginX - 48, y + 20, 41, "Poursuivre avec Kif'Cash", CTA_CONFIG.url);
+    y += ctaHeight + 8;
+
+    // Liens secondaires et contact
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.8);
+    textColor(grey);
+    doc.textWithLink("Refaire Le Déclic", marginX, y, { url: DECLIC_URL });
+    doc.textWithLink("chenillepapillon.be", marginX + 38, y, { url: "https://www.chenillepapillon.be" });
+    doc.textWithLink("juliette@chenillepapillon.be", pageWidth - marginX, y, { url: "mailto:juliette@chenillepapillon.be", align: "right" });
+
+    drawLegalBlock();
+    addPageNumbers();
 
     doc.save("mon-declic.pdf");
   }
-
   // ============================================================
   // ROUTEUR
   // ============================================================
